@@ -126,6 +126,13 @@ impl TryFrom<ApduHeader> for Instruction {
 // Developer mode / pending review popup
 // must be cleared with user interaction
 fn display_pending_review(comm: &mut Comm) {
+    use ledger_device_sdk::buttons::ButtonEvent::{
+        BothButtonsRelease, LeftButtonRelease, RightButtonRelease,
+    };
+    use ledger_device_sdk::ui::gadgets::clear_screen;
+    use ledger_device_sdk::ui::layout::{Layout, Location, StringPlace};
+    use ledger_device_sdk::ui::screen_util::screen_update;
+
     clear_screen();
     "Pending Review".place(Location::Middle, Layout::Centered, false);
     screen_update();
