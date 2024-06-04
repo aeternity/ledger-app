@@ -22,7 +22,6 @@ use ledger_device_sdk::ui::{
 
 use crate::AppSW;
 use alloc::format;
-use core::str::from_utf8_mut;
 
 #[cfg(not(any(target_os = "stax", target_os = "flex")))]
 use ledger_device_sdk::ui::{
@@ -49,7 +48,7 @@ pub fn ui_display_pk(addr: &[u8]) -> Result<bool, AppSW> {
     {
         let my_field = [Field {
             name: "Address",
-            value: addr_hex,
+            value: addr_hex.as_str(),
         }];
 
         let my_review = MultiFieldReview::new(
@@ -73,6 +72,6 @@ pub fn ui_display_pk(addr: &[u8]) -> Result<bool, AppSW> {
         Ok(NbglAddressReview::new()
             .glyph(&FERRIS)
             .verify_str("Verify CRAB address")
-            .show(addr_hex))
+            .show(&addr_hex))
     }
 }
