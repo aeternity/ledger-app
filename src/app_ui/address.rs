@@ -35,24 +35,18 @@ use ledger_device_sdk::nbgl::{NbglAddressReview, NbglGlyph};
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 use include_gif::include_gif;
 
-// Display only the last 20 bytes of the address
-const DISPLAY_ADDR_BYTES_LEN: usize = 20;
-
-pub fn ui_display_pk(addr: &[u8]) -> Result<bool, AppSW> {
-    let addr_hex = format!(
-        "0x{}",
-        hex::encode(&addr[addr.len() - DISPLAY_ADDR_BYTES_LEN..]).to_uppercase()
-    );
+pub fn ui_display_address(addr: &[u8]) -> Result<bool, AppSW> {
+    let addr_str = core::str::from_utf8(addr).unwrap();
 
     #[cfg(not(any(target_os = "stax", target_os = "flex")))]
     {
-        let my_field = [Field {
+        let address_field = [Field {
             name: "Address",
-            value: addr_hex.as_str(),
+            value: addr_str,
         }];
 
         let my_review = MultiFieldReview::new(
-            &my_field,
+            &address_field,
             &["Confirm Address"],
             Some(&EYE),
             "Approve",
@@ -64,6 +58,7 @@ pub fn ui_display_pk(addr: &[u8]) -> Result<bool, AppSW> {
         Ok(my_review.show())
     }
 
+    // TODO: check that things are working for stax and flex
     #[cfg(any(target_os = "stax", target_os = "flex"))]
     {
         // Load glyph from 64x64 4bpp gif file with include_gif macro. Creates an NBGL compatible glyph.
@@ -72,6 +67,6 @@ pub fn ui_display_pk(addr: &[u8]) -> Result<bool, AppSW> {
         Ok(NbglAddressReview::new()
             .glyph(&FERRIS)
             .verify_str("Verify CRAB address")
-            .show(&addr_hex))
+            .show(&addr_str))
     }
 }

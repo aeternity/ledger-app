@@ -25,6 +25,7 @@ mod app_ui {
     pub mod sign;
 }
 mod handlers {
+    pub mod get_address;
     pub mod get_public_key;
     pub mod get_version;
     pub mod sign_tx;
@@ -34,6 +35,7 @@ mod settings;
 
 use app_ui::menu::ui_menu_main;
 use handlers::{
+    get_address::handler_get_address,
     get_public_key::handler_get_public_key,
     get_version::handler_get_version,
     sign_tx::{handler_sign_tx, TxContext},
@@ -93,6 +95,7 @@ impl From<AppSW> for Reply {
 pub enum Instruction {
     GetVersion,
     GetAppName,
+    GetAddress { confirm_needed: bool },
     GetPubkey { display: bool },
     SignTx { chunk: u8, more: bool },
 }
@@ -113,6 +116,9 @@ impl TryFrom<ApduHeader> for Instruction {
     /// [`sample_main`] to have this verification automatically performed by the SDK.
     fn try_from(value: ApduHeader) -> Result<Self, Self::Error> {
         match (value.ins, value.p1, value.p2) {
+            (2, 0 | 1, 0) => Ok(Instruction::GetAddress {
+                confirm_needed: value.p1 != 0,
+            }),
             (3, 0, 0) => Ok(Instruction::GetVersion),
             (4, 0, 0) => Ok(Instruction::GetAppName),
             (5, 0 | 1, 0) => Ok(Instruction::GetPubkey {
@@ -208,6 +214,7 @@ fn handle_apdu(comm: &mut Comm, ins: &Instruction, ctx: &mut TxContext) -> Resul
             comm.append(env!("CARGO_PKG_NAME").as_bytes());
             Ok(())
         }
+        Instruction::GetAddress { confirm_needed } => handler_get_address(comm, *confirm_needed),
         Instruction::GetVersion => handler_get_version(comm),
         Instruction::GetPubkey { display } => handler_get_public_key(comm, *display),
         Instruction::SignTx { chunk, more } => handler_sign_tx(comm, *chunk, *more, ctx),
