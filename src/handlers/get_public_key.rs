@@ -15,7 +15,7 @@
  *  limitations under the License.
  *****************************************************************************/
 
-use crate::app_ui::address::ui_display_pk;
+use crate::app_ui::address::ui_display_address;
 use crate::utils::Bip32Path;
 use crate::AppSW;
 use ledger_device_sdk::ecc::{Secp256k1, SeedDerive};
@@ -36,7 +36,7 @@ pub fn handler_get_public_key(comm: &mut Comm, display: bool) -> Result<(), AppS
 
         let _ = keccak256.hash(&pk.pubkey[1..], &mut address);
 
-        if !ui_display_pk(&address)? {
+        if !ui_display_address(&address)? {
             return Err(AppSW::Deny);
         }
     }
