@@ -18,6 +18,9 @@
 #![no_std]
 #![no_main]
 
+// TODO: enable warnings later. this is done to make it easier to find error messages
+#![allow(warnings)]
+
 mod utils;
 mod app_ui {
     pub mod address;
