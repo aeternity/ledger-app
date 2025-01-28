@@ -15,8 +15,6 @@ const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
 
 #[derive(Default)]
 pub struct TxFirstChunk {
-    // TODO: does spend_tx even matter?
-    spend_tx: bool,
     pub recipient: String,
     pub amount: BigRational,
     pub fee: BigRational,
@@ -72,13 +70,12 @@ impl TxContext {
         let list = rlp_item.list().map_err(|_| AppSW::WrongApduLength)?;
 
         // TODO: use a better status word for the error
-        let spend_tx = if SPEND_TRANSACTION_PREFIX
-            == u8::from_rlp_item(&list[0]).map_err(|_| AppSW::WrongApduLength)?
-        {
-            true
-        } else {
-            false
-        };
+        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::WrongApduLength)? != SPEND_TRANSACTION_PREFIX {
+            // TODO: this should be changed later. non-spend txns should be signed
+            //       but they should not be treated like spend txns
+            // TODO: use a better status word for the error
+            return Err(AppSW::WrongApduLength);
+        }
         let _ = convert_address(&list[2].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
         let recipient = convert_address(&list[3].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
         let amountx =
@@ -93,7 +90,6 @@ impl TxContext {
         // TODO: extract the rlp items from list in a cleaner way (don't use map_err that many times)
 
         self.tx = TxFirstChunk {
-            spend_tx,
             recipient,
             amount,
             fee,
