@@ -14,7 +14,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *****************************************************************************/
-use crate::handlers::sign_tx::Tx;
+use crate::handlers::sign_tx::TxFirstChunk;
 use crate::AppSW;
 
 #[cfg(not(any(target_os = "stax", target_os = "flex")))]
@@ -39,23 +39,30 @@ use alloc::format;
 /// # Arguments
 ///
 /// * `tx` - Transaction to be displayed for validation
-pub fn ui_display_tx(tx: &Tx) -> Result<bool, AppSW> {
-    let value_str = format!("{} {}", tx.coin, tx.value);
-    let to_str = format!("0x{}", hex::encode(tx.to).to_uppercase());
+pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
+    use num_traits::cast::ToPrimitive;
+
+    let amount_str = format!("{}", tx.amount.to_f64().unwrap());
+    let fee_str = format!("{}", tx.fee.to_f64().unwrap());
+    let to_str = format!("{}", tx.recipient);
 
     // Define transaction review fields
     let my_fields = [
         Field {
             name: "Amount",
-            value: value_str.as_str(),
+            value: amount_str.as_str(),
+        },
+        Field {
+            name: "Fee",
+            value: fee_str.as_str(),
         },
         Field {
             name: "Destination",
             value: to_str.as_str(),
         },
         Field {
-            name: "Memo",
-            value: tx.memo,
+            name: "Payload",
+            value: tx.payload.as_str(),
         },
     ];
 

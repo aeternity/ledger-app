@@ -1,42 +1,40 @@
-use alloc::vec::Vec;
+use alloc::string::{String, ToString};
 
-use crate::AppSW;
+use ledger_device_sdk::ecc::{ECPrivateKey, Ed25519, make_bip32_path};
+use ledger_device_sdk::hash::{HashInit, sha2::Sha2_256};
 
-/// BIP32 path stored as an array of [`u32`].
-#[derive(Default)]
-pub struct Bip32Path(Vec<u32>);
+const BIP32_PATH: [u32; 5] = make_bip32_path(b"m/44'/457'/0'/0'/0'");
 
-impl AsRef<[u32]> for Bip32Path {
-    fn as_ref(&self) -> &[u32] {
-        &self.0
-    }
+pub fn get_private_key(account_number: u32) -> ECPrivateKey<32, 'E'> {
+    let mut path = BIP32_PATH.clone();
+    path[2] |= account_number;
+    Ed25519::derive_from_path_slip10(&path)
 }
 
-impl TryFrom<&[u8]> for Bip32Path {
-    type Error = AppSW;
+// TODO: should I use static str instead of str?
+pub fn to_ae_string(pubkey: &[u8], prefix: &str) -> String {
+    let pk = [pubkey, &make_check(pubkey)].concat();
 
-    /// Constructs a [`Bip32Path`] from a given byte array.
-    ///
-    /// This method will return an error in the following cases:
-    /// - the input array is empty,
-    /// - the number of bytes in the input array is not a multiple of 4,
-    ///
-    /// # Arguments
-    ///
-    /// * `data` - Encoded BIP32 path. First byte is the length of the path, as encoded by ragger.
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-        // Check data length
-        if data.is_empty() // At least the length byte is required
-            || (data[0] as usize * 4 != data.len() - 1)
-        {
-            return Err(AppSW::WrongApduLength);
-        }
+    let mut output = prefix.to_string();
+    // TODO: do not use unwrap
+    let _ = bs58::encode(pk).onto(&mut output).unwrap();
 
-        Ok(Bip32Path(
-            data[1..]
-                .chunks(4)
-                .map(|chunk| u32::from_be_bytes(chunk.try_into().unwrap()))
-                .collect(),
-        ))
-    }
+    output
+}
+
+fn make_check(input: &[u8]) -> [u8; 4] {
+    let mut sha2 = Sha2_256::new();
+
+    let mut hash1: [u8; 32] = [0u8; 32];
+    let mut hash2: [u8; 32] = [0u8; 32];
+
+    sha2.update(input).unwrap();
+    sha2.finalize(&mut hash1).unwrap();
+
+    sha2.update(&hash1).unwrap();
+    sha2.finalize(&mut hash2).unwrap();
+
+    let mut check: [u8; 4] = [0u8; 4];
+    check.copy_from_slice(&hash2[0..4]);
+    check
 }
