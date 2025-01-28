@@ -95,7 +95,6 @@ impl From<AppSW> for Reply {
 /// Possible input commands received through APDUs.
 pub enum Instruction {
     GetVersion,
-    GetAppName,
     GetAddress { confirm_needed: bool },
     SignTx { chunk: u8, more: bool },
 }
@@ -120,7 +119,6 @@ impl TryFrom<ApduHeader> for Instruction {
                 confirm_needed: value.p1 != 0,
             }),
             (3, 0, 0) => Ok(Instruction::GetVersion),
-            (4, 0, 0) => Ok(Instruction::GetAppName),
             (6, P1_SIGN_TX_START, P2_SIGN_TX_MORE)
             | (6, 1..=P1_SIGN_TX_MAX, P2_SIGN_TX_LAST | P2_SIGN_TX_MORE) => {
                 Ok(Instruction::SignTx {
@@ -204,10 +202,6 @@ extern "C" fn sample_main() {
 
 fn handle_apdu(comm: &mut Comm, ins: &Instruction, ctx: &mut TxContext) -> Result<(), AppSW> {
     match ins {
-        Instruction::GetAppName => {
-            comm.append(env!("CARGO_PKG_NAME").as_bytes());
-            Ok(())
-        }
         Instruction::GetAddress { confirm_needed } => handler_get_address(comm, *confirm_needed),
         Instruction::GetVersion => handler_get_version(comm),
         Instruction::SignTx { chunk, more } => handler_sign_tx(comm, *chunk, *more, ctx),
