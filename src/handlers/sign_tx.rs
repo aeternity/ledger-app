@@ -1,137 +1,152 @@
-/*****************************************************************************
- *   Ledger App Boilerplate Rust.
- *   (c) 2023 Ledger SAS.
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *****************************************************************************/
-use crate::app_ui::sign::ui_display_tx;
-use crate::utils::Bip32Path;
-use crate::AppSW;
-use alloc::vec::Vec;
-use ledger_device_sdk::ecc::{Secp256k1, SeedDerive};
-use ledger_device_sdk::hash::{sha3::Keccak256, HashInit};
+use alloc::{borrow::ToOwned, string::String, vec::Vec};
+
 use ledger_device_sdk::io::Comm;
+use ledger_device_sdk::hash::{HashInit, blake2::Blake2b_256};
 
-#[cfg(any(target_os = "stax", target_os = "flex"))]
-use ledger_device_sdk::nbgl::NbglHomeAndSettings;
+use aerlp::{FromRlpItem, RlpItem};
+use num_bigint::{BigInt, BigUint};
+use num_rational::BigRational;
 
-use serde::Deserialize;
-use serde_json_core::from_slice;
+use crate::app_ui::sign::ui_display_tx;
+use crate::utils::{self, to_ae_string};
+use crate::AppSW;
 
-const MAX_TRANSACTION_LEN: usize = 510;
+const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
 
-#[derive(Deserialize)]
-pub struct Tx<'a> {
-    #[allow(dead_code)]
-    nonce: u64,
-    pub coin: &'a str,
-    pub value: u64,
-    #[serde(with = "hex::serde")] // Allows JSON deserialization from hex string
-    pub to: [u8; 20],
-    pub memo: &'a str,
+#[derive(Default)]
+pub struct TxFirstChunk {
+    // TODO: does spend_tx even matter?
+    spend_tx: bool,
+    pub recipient: String,
+    pub amount: BigRational,
+    pub fee: BigRational,
+    pub payload: String,
 }
 
+#[derive(Default)]
 pub struct TxContext {
-    raw_tx: Vec<u8>,
-    path: Bip32Path,
-    review_finished: bool,
-    #[cfg(any(target_os = "stax", target_os = "flex"))]
-    pub home: NbglHomeAndSettings,
+    /// Header data
+    account_number: u32,
+    remain_tx_bytes: u32,
+    network_id: Vec<u8>,
+
+    /// Transaction data in the first chunk
+    tx: TxFirstChunk,
+
+    /// Hash of all transaction's chunks
+    blake2b: Blake2b_256,
 }
 
-// Implement constructor for TxInfo with default values
 impl TxContext {
-    // Constructor
-    pub fn new() -> TxContext {
-        TxContext {
-            raw_tx: Vec::new(),
-            path: Default::default(),
-            review_finished: false,
-            #[cfg(any(target_os = "stax", target_os = "flex"))]
-            home: Default::default(),
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
-    // Get review status
-    #[allow(dead_code)]
-    pub fn finished(&self) -> bool {
-        self.review_finished
+
+    fn parse_header_data<'a>(&mut self, mut data: &'a [u8]) -> Result<&'a [u8], AppSW> {
+        let account_number = u32::from_be_bytes(data[..4].try_into().unwrap());
+        data = &data[4..];
+
+        // TODO: perform a check that tx_len is equal to the transaction length
+        //       there should be an error just like when calling get_data with wrong
+        //       data length
+        let tx_len = u32::from_be_bytes(data[..4].try_into().unwrap());
+        data = &data[4..];
+
+        let network_id_len = data[0] as usize;
+        data = &data[1..];
+        // TODO: make sure network_id_len is less than NETWORK_ID_MAX_LENGTH
+
+        let network_id = data[..network_id_len].to_vec();
+        data = &data[network_id_len..];
+
+        Ok(data)
     }
-    // Implement reset for TxInfo
-    fn reset(&mut self) {
-        self.raw_tx.clear();
-        self.path = Default::default();
-        self.review_finished = false;
+
+    fn parse_tx_first_chunk(&mut self, data: &[u8]) -> Result<(), AppSW> {
+        // TODO: use a better status word for the error
+        let (rlp_item, remain) = RlpItem::try_deserialize(data).map_err(|_| AppSW::WrongApduLength)?;
+        // TODO: the rlp item has a length, assert that it's ok
+        // TODO: is it fine if something remains? or should I check if reamin.empty() == true
+
+        // TODO: generate a better error
+        let list = rlp_item.list().map_err(|_| AppSW::WrongApduLength)?;
+
+        // TODO: use a better status word for the error
+        let spend_tx = if SPEND_TRANSACTION_PREFIX
+            == u8::from_rlp_item(&list[0]).map_err(|_| AppSW::WrongApduLength)?
+        {
+            true
+        } else {
+            false
+        };
+        let _ = convert_address(&list[2].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
+        let recipient = convert_address(&list[3].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
+        let amountx =
+            BigUint::from_bytes_be(&list[4].byte_array().map_err(|_| AppSW::WrongApduLength)?);
+        let amount = BigRational::new(BigInt::from(amountx), BigInt::from(10u64.pow(18)));
+        let feex = BigUint::from_bytes_be(&list[5].byte_array().map_err(|_| AppSW::WrongApduLength)?);
+        let fee = BigRational::new(BigInt::from(feex), BigInt::from(10u64.pow(18)));
+        let payload = core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::WrongApduLength)?)
+            .unwrap()
+            .to_owned();
+
+        // TODO: extract the rlp items from list in a cleaner way (don't use map_err that many times)
+
+        self.tx = TxFirstChunk {
+            spend_tx,
+            recipient,
+            amount,
+            fee,
+            payload,
+        };
+
+        Ok(())
     }
 }
 
 pub fn handler_sign_tx(
     comm: &mut Comm,
-    chunk: u8,
-    more: bool,
+    first_chunk: bool,
     ctx: &mut TxContext,
 ) -> Result<(), AppSW> {
-    // Try to get data from comm
     let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
-    // First chunk, try to parse the path
-    if chunk == 0 {
-        // Reset transaction context
-        ctx.reset();
-        // This will propagate the error if the path is invalid
-        ctx.path = data.try_into()?;
-        Ok(())
-    // Next chunks, append data to raw_tx and return or parse
-    // the transaction if it is the last chunk.
+
+    if first_chunk {
+        let tx_bytes = ctx.parse_header_data(data)?;
+        ctx.parse_tx_first_chunk(tx_bytes)?;
+        ctx.blake2b.update(tx_bytes);
     } else {
-        if ctx.raw_tx.len() + data.len() > MAX_TRANSACTION_LEN {
-            return Err(AppSW::TxWrongLength);
-        }
+        ctx.blake2b.update(data);
+        return Ok(());
+    }
 
-        // Append data to raw_tx
-        ctx.raw_tx.extend(data);
-
-        // If we expect more chunks, return
-        if more {
-            ctx.review_finished = false;
-            Ok(())
-        // Otherwise, try to parse the transaction
-        } else {
-            // Try to deserialize the transaction
-            let (tx, _): (Tx, usize) = from_slice(&ctx.raw_tx).map_err(|_| AppSW::TxParsingFail)?;
-            // Display transaction. If user approves
-            // the transaction, sign it. Otherwise,
-            // return a "deny" status word.
-            if ui_display_tx(&tx)? {
-                ctx.review_finished = true;
-                compute_signature_and_append(comm, ctx)
-            } else {
-                ctx.review_finished = true;
-                Err(AppSW::Deny)
-            }
-        }
+    if ui_display_tx(&ctx.tx)? {
+        let mut hash: [u8; 32] = [0; 32];
+        ctx.blake2b.finalize(&mut hash);
+        let data_to_sign = [&ctx.network_id[..], &hash].concat();
+        let privkey = utils::get_private_key(ctx.account_number);
+        // TODO: find a better error
+        let (sig, sig_len) = privkey.sign(&data_to_sign).map_err(|_| AppSW::WrongApduLength)?;
+        // assert that sig_len is 64
+        comm.append(&sig);
+        Ok(())
+    } else {
+        Err(AppSW::Deny)
     }
 }
 
-fn compute_signature_and_append(comm: &mut Comm, ctx: &mut TxContext) -> Result<(), AppSW> {
-    let mut keccak256 = Keccak256::new();
-    let mut message_hash: [u8; 32] = [0u8; 32];
+fn convert_address(address: &[u8]) -> Result<String, AppSW> {
+    assert_eq!(address.len(), 33);
 
-    let _ = keccak256.hash(&ctx.raw_tx, &mut message_hash);
+    const ACCOUNT_ADDRESS_PREFIX: u8 = 1;
+    const ACCOUNT_NAMEHASH_PREFIX: u8 = 2;
 
-    let (sig, siglen, parity) = Secp256k1::derive_from_path(ctx.path.as_ref())
-        .deterministic_sign(&message_hash)
-        .map_err(|_| AppSW::TxSignFail)?;
-    comm.append(&[siglen as u8]);
-    comm.append(&sig[..siglen as usize]);
-    comm.append(&[parity as u8]);
-    Ok(())
+    let prefix = match address[0] {
+        ACCOUNT_ADDRESS_PREFIX => "ak_",
+        ACCOUNT_NAMEHASH_PREFIX => "nm_",
+        // TODO: better error code
+        _ => Err(AppSW::WrongApduLength)?,
+    };
+
+    Ok(to_ae_string(address[1..].try_into().unwrap(), prefix))
 }

@@ -29,8 +29,8 @@ mod app_ui {
 }
 mod handlers {
     pub mod get_address;
-    pub mod get_version;
     pub mod sign_tx;
+    pub mod get_version;
 }
 
 mod settings;
@@ -38,8 +38,8 @@ mod settings;
 use app_ui::menu::ui_menu_main;
 use handlers::{
     get_address::handler_get_address,
-    get_version::handler_get_version,
     sign_tx::{handler_sign_tx, TxContext},
+    get_version::handler_get_version,
 };
 use ledger_device_sdk::io::{ApduHeader, Comm, Reply, StatusWords};
 #[cfg(feature = "pending_review_screen")]
@@ -96,7 +96,7 @@ impl From<AppSW> for Reply {
 pub enum Instruction {
     GetVersion,
     GetAddress { confirm_needed: bool },
-    SignTx { chunk: u8, more: bool },
+    SignTx { first_chunk: bool },
 }
 
 impl TryFrom<ApduHeader> for Instruction {
@@ -118,14 +118,10 @@ impl TryFrom<ApduHeader> for Instruction {
             (2, 0 | 1, 0) => Ok(Instruction::GetAddress {
                 confirm_needed: value.p1 != 0,
             }),
+            (4, 0 | 0x80, 0) => Ok(Instruction::SignTx {
+                first_chunk: value.p1 == 0
+            }),
             (3, 0, 0) => Ok(Instruction::GetVersion),
-            (6, P1_SIGN_TX_START, P2_SIGN_TX_MORE)
-            | (6, 1..=P1_SIGN_TX_MAX, P2_SIGN_TX_LAST | P2_SIGN_TX_MORE) => {
-                Ok(Instruction::SignTx {
-                    chunk: value.p1,
-                    more: value.p2 == P2_SIGN_TX_MORE,
-                })
-            }
             (3..=6, _, _) => Err(AppSW::WrongP1P2),
             (_, _, _) => Err(AppSW::InsNotSupported),
         }
@@ -135,9 +131,6 @@ impl TryFrom<ApduHeader> for Instruction {
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, status: &AppSW) {
     let (show_status, status_type) = match (ins, status) {
-        (Instruction::SignTx { .. }, AppSW::Deny | AppSW::Ok) if tx_ctx.finished() => {
-            (true, StatusType::Transaction)
-        }
         (_, _) => (false, StatusType::Transaction),
     };
 
@@ -202,8 +195,8 @@ extern "C" fn sample_main() {
 
 fn handle_apdu(comm: &mut Comm, ins: &Instruction, ctx: &mut TxContext) -> Result<(), AppSW> {
     match ins {
+        Instruction::SignTx { first_chunk } => handler_sign_tx(comm, *first_chunk, ctx),
         Instruction::GetAddress { confirm_needed } => handler_get_address(comm, *confirm_needed),
         Instruction::GetVersion => handler_get_version(comm),
-        Instruction::SignTx { chunk, more } => handler_sign_tx(comm, *chunk, *more, ctx),
     }
 }
