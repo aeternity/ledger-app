@@ -29,7 +29,6 @@ mod app_ui {
 }
 mod handlers {
     pub mod get_address;
-    pub mod get_public_key;
     pub mod get_version;
     pub mod sign_tx;
 }
@@ -39,7 +38,6 @@ mod settings;
 use app_ui::menu::ui_menu_main;
 use handlers::{
     get_address::handler_get_address,
-    get_public_key::handler_get_public_key,
     get_version::handler_get_version,
     sign_tx::{handler_sign_tx, TxContext},
 };
@@ -99,7 +97,6 @@ pub enum Instruction {
     GetVersion,
     GetAppName,
     GetAddress { confirm_needed: bool },
-    GetPubkey { display: bool },
     SignTx { chunk: u8, more: bool },
 }
 
@@ -124,9 +121,6 @@ impl TryFrom<ApduHeader> for Instruction {
             }),
             (3, 0, 0) => Ok(Instruction::GetVersion),
             (4, 0, 0) => Ok(Instruction::GetAppName),
-            (5, 0 | 1, 0) => Ok(Instruction::GetPubkey {
-                display: value.p1 != 0,
-            }),
             (6, P1_SIGN_TX_START, P2_SIGN_TX_MORE)
             | (6, 1..=P1_SIGN_TX_MAX, P2_SIGN_TX_LAST | P2_SIGN_TX_MORE) => {
                 Ok(Instruction::SignTx {
@@ -143,9 +137,6 @@ impl TryFrom<ApduHeader> for Instruction {
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, status: &AppSW) {
     let (show_status, status_type) = match (ins, status) {
-        (Instruction::GetPubkey { display: true }, AppSW::Deny | AppSW::Ok) => {
-            (true, StatusType::Address)
-        }
         (Instruction::SignTx { .. }, AppSW::Deny | AppSW::Ok) if tx_ctx.finished() => {
             (true, StatusType::Transaction)
         }
@@ -219,7 +210,6 @@ fn handle_apdu(comm: &mut Comm, ins: &Instruction, ctx: &mut TxContext) -> Resul
         }
         Instruction::GetAddress { confirm_needed } => handler_get_address(comm, *confirm_needed),
         Instruction::GetVersion => handler_get_version(comm),
-        Instruction::GetPubkey { display } => handler_get_public_key(comm, *display),
         Instruction::SignTx { chunk, more } => handler_sign_tx(comm, *chunk, *more, ctx),
     }
 }
