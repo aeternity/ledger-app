@@ -61,29 +61,26 @@ impl TxContext {
     }
 
     fn parse_tx_first_chunk(&mut self, data: &[u8]) -> Result<(), AppSW> {
-        // TODO: use a better status word for the error
-        let (rlp_item, remain) = RlpItem::try_deserialize(data).map_err(|_| AppSW::WrongApduLength)?;
+        let (rlp_item, remain) = RlpItem::try_deserialize(data).map_err(|_| AppSW::TxParsingFail)?;
         // TODO: the rlp item has a length, assert that it's ok
         // TODO: is it fine if something remains? or should I check if reamin.empty() == true
 
-        // TODO: generate a better error
-        let list = rlp_item.list().map_err(|_| AppSW::WrongApduLength)?;
+        let list = rlp_item.list().map_err(|_| AppSW::TxParsingFail)?;
 
-        // TODO: use a better status word for the error
-        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::WrongApduLength)? != SPEND_TRANSACTION_PREFIX {
+        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)? != SPEND_TRANSACTION_PREFIX {
             // TODO: this should be changed later. non-spend txns should be signed
             //       but they should not be treated like spend txns
             // TODO: use a better status word for the error
-            return Err(AppSW::WrongApduLength);
+            return Err(AppSW::Deny);
         }
-        let _ = convert_address(&list[2].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
-        let recipient = convert_address(&list[3].byte_array().map_err(|_| AppSW::WrongApduLength)?)?;
+        let _ = convert_address(&list[2].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
+        let recipient = convert_address(&list[3].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
         let amountx =
-            BigUint::from_bytes_be(&list[4].byte_array().map_err(|_| AppSW::WrongApduLength)?);
+            BigUint::from_bytes_be(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let amount = BigRational::new(BigInt::from(amountx), BigInt::from(10u64.pow(18)));
-        let feex = BigUint::from_bytes_be(&list[5].byte_array().map_err(|_| AppSW::WrongApduLength)?);
+        let feex = BigUint::from_bytes_be(&list[5].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let fee = BigRational::new(BigInt::from(feex), BigInt::from(10u64.pow(18)));
-        let payload = core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::WrongApduLength)?)
+        let payload = core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::TxParsingFail)?)
             .unwrap()
             .to_owned();
 
@@ -121,8 +118,7 @@ pub fn handler_sign_tx(
         ctx.blake2b.finalize(&mut hash);
         let data_to_sign = [&ctx.network_id[..], &hash].concat();
         let privkey = utils::get_private_key(ctx.account_number);
-        // TODO: find a better error
-        let (sig, sig_len) = privkey.sign(&data_to_sign).map_err(|_| AppSW::WrongApduLength)?;
+        let (sig, sig_len) = privkey.sign(&data_to_sign).map_err(|_| AppSW::TxSignFail)?;
         // assert that sig_len is 64
         comm.append(&sig);
         Ok(())
@@ -140,8 +136,7 @@ fn convert_address(address: &[u8]) -> Result<String, AppSW> {
     let prefix = match address[0] {
         ACCOUNT_ADDRESS_PREFIX => "ak_",
         ACCOUNT_NAMEHASH_PREFIX => "nm_",
-        // TODO: better error code
-        _ => Err(AppSW::WrongApduLength)?,
+        _ => Err(AppSW::TxParsingFail)?,
     };
 
     Ok(to_ae_string(address[1..].try_into().unwrap(), prefix))
