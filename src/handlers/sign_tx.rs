@@ -1,14 +1,14 @@
 use alloc::{borrow::ToOwned, string::String, vec::Vec};
 
+use ledger_device_sdk::hash::{blake2::Blake2b_256, HashInit};
 use ledger_device_sdk::io::Comm;
-use ledger_device_sdk::hash::{HashInit, blake2::Blake2b_256};
 
 use aerlp::{FromRlpItem, RlpItem};
 use num_bigint::{BigInt, BigUint};
 use num_rational::BigRational;
 
 use crate::app_ui::sign::ui_display_tx;
-use crate::utils::{self, to_ae_string};
+use crate::utils::{self, to_ae_string, AePrefix};
 use crate::AppSW;
 
 const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
@@ -61,28 +61,32 @@ impl TxContext {
     }
 
     fn parse_tx_first_chunk(&mut self, data: &[u8]) -> Result<(), AppSW> {
-        let (rlp_item, remain) = RlpItem::try_deserialize(data).map_err(|_| AppSW::TxParsingFail)?;
+        let (rlp_item, remain) =
+            RlpItem::try_deserialize(data).map_err(|_| AppSW::TxParsingFail)?;
         // TODO: the rlp item has a length, assert that it's ok
         // TODO: is it fine if something remains? or should I check if reamin.empty() == true
 
         let list = rlp_item.list().map_err(|_| AppSW::TxParsingFail)?;
 
-        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)? != SPEND_TRANSACTION_PREFIX {
+        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)?
+            != SPEND_TRANSACTION_PREFIX
+        {
             // TODO: this should be changed later. non-spend txns should be signed
             //       but they should not be treated like spend txns
             // TODO: use a better status word for the error
             return Err(AppSW::Deny);
         }
-        let _ = convert_address(&list[2].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
-        let recipient = convert_address(&list[3].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
+        let _ = parse_address(&list[2].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
+        let recipient = parse_address(&list[3].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
         let amountx =
             BigUint::from_bytes_be(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let amount = BigRational::new(BigInt::from(amountx), BigInt::from(10u64.pow(18)));
         let feex = BigUint::from_bytes_be(&list[5].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let fee = BigRational::new(BigInt::from(feex), BigInt::from(10u64.pow(18)));
-        let payload = core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::TxParsingFail)?)
-            .unwrap()
-            .to_owned();
+        let payload =
+            core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::TxParsingFail)?)
+                .unwrap()
+                .to_owned();
 
         // TODO: extract the rlp items from list in a cleaner way (don't use map_err that many times)
 
@@ -127,17 +131,17 @@ pub fn handler_sign_tx(
     }
 }
 
-fn convert_address(address: &[u8]) -> Result<String, AppSW> {
-    assert_eq!(address.len(), 33);
-
+fn parse_address(address: &[u8]) -> Result<String, AppSW> {
     const ACCOUNT_ADDRESS_PREFIX: u8 = 1;
-    const ACCOUNT_NAMEHASH_PREFIX: u8 = 2;
+    const ACCOUNT_NAMEID_PREFIX: u8 = 2;
 
-    let prefix = match address[0] {
-        ACCOUNT_ADDRESS_PREFIX => "ak_",
-        ACCOUNT_NAMEHASH_PREFIX => "nm_",
+    let prefix = match *address.first().ok_or(AppSW::TxParsingFail)? {
+        ACCOUNT_ADDRESS_PREFIX => AePrefix::AccountPubkey,
+        ACCOUNT_NAMEID_PREFIX => AePrefix::NameId,
         _ => Err(AppSW::TxParsingFail)?,
     };
 
-    Ok(to_ae_string(address[1..].try_into().unwrap(), prefix))
+    let address_bytes: [u8; 32] = address[1..].try_into().map_err(|_| AppSW::TxParsingFail)?;
+
+    Ok(to_ae_string(&address_bytes, prefix))
 }
