@@ -121,8 +121,8 @@ impl TryFrom<ApduHeader> for Instruction {
             (4, 0 | 0x80, 0) => Ok(Instruction::SignTx {
                 first_chunk: value.p1 == 0
             }),
-            (3, 0, 0) => Ok(Instruction::GetVersion),
-            (3..=6, _, _) => Err(AppSW::WrongP1P2),
+            (6, 0, 0) => Ok(Instruction::GetVersion),
+            (2 | 4 | 6, _, _) => Err(AppSW::WrongP1P2),
             (_, _, _) => Err(AppSW::InsNotSupported),
         }
     }
