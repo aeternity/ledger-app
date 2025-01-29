@@ -20,12 +20,7 @@ use ledger_device_sdk::io;
 
 pub fn handler_get_version(comm: &mut io::Comm) -> Result<(), AppSW> {
     if let Some((major, minor, patch)) = parse_version_string(env!("CARGO_PKG_VERSION")) {
-        // In older versions of the app, the first byte of the get_version response was
-        // used to store information about the app settings. This information turned out
-        // later to be useless, and so it was removed from the app.
-        // A 0x00 byte is appened before the version to maintain backward compatibility
-        // with older versions of the app.
-        comm.append(&[0x00, major, minor, patch]);
+        comm.append(&[major, minor, patch]);
         Ok(())
     } else {
         Err(AppSW::VersionParsingFail)
