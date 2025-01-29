@@ -135,13 +135,15 @@ fn parse_address(address: &[u8]) -> Result<String, AppSW> {
     const ACCOUNT_ADDRESS_PREFIX: u8 = 1;
     const ACCOUNT_NAMEID_PREFIX: u8 = 2;
 
-    let prefix = match *address.first().ok_or(AppSW::TxParsingFail)? {
+    let (prefix_byte, rest) = address.split_first().ok_or(AppSW::TxParsingFail)?;
+
+    let prefix = match *prefix_byte {
         ACCOUNT_ADDRESS_PREFIX => AePrefix::AccountPubkey,
         ACCOUNT_NAMEID_PREFIX => AePrefix::NameId,
         _ => Err(AppSW::TxParsingFail)?,
     };
 
-    let address_bytes: [u8; 32] = address[1..].try_into().map_err(|_| AppSW::TxParsingFail)?;
+    let address_bytes: [u8; 32] = rest.try_into().map_err(|_| AppSW::TxParsingFail)?;
 
     Ok(to_ae_string(&address_bytes, prefix))
 }
