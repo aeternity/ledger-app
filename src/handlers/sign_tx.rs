@@ -12,6 +12,7 @@ use crate::utils::{self, to_ae_string, AePrefix};
 use crate::AppSW;
 
 const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
+const NETWORK_ID_MAX_LENGTH: usize = 32;
 
 #[derive(Default)]
 pub struct TxFirstChunk {
@@ -25,7 +26,7 @@ pub struct TxFirstChunk {
 pub struct TxContext {
     /// Header data
     account_number: u32,
-    remain_tx_bytes: u32,
+    remain_tx_len: u32,
     network_id: Vec<u8>,
 
     /// Transaction data in the first chunk
@@ -40,24 +41,33 @@ impl TxContext {
         Default::default()
     }
 
-    fn parse_header_data<'a>(&mut self, mut data: &'a [u8]) -> Result<&'a [u8], AppSW> {
-        let account_number = u32::from_be_bytes(data[..4].try_into().unwrap());
-        data = &data[4..];
+    pub fn reset(&mut self) {
+        self.account_number = 0;
+        self.remain_tx_len = 0;
+        self.network_id = Vec::new();
+        self.tx = Default::default();
+        self.blake2b.reset();
+    }
 
-        // TODO: perform a check that tx_len is equal to the transaction length
-        //       there should be an error just like when calling get_data with wrong
-        //       data length
-        let tx_len = u32::from_be_bytes(data[..4].try_into().unwrap());
-        data = &data[4..];
+    fn parse_header_data<'a>(&mut self, data: &'a [u8]) -> Result<&'a [u8], AppSW> {
+        let (account_number_bytes, rest) = data.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
+        let (tx_len_bytes, rest) = rest.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
+        let (network_id_len_byte, rest) = rest.split_first().ok_or(AppSW::TxParsingFail)?;
 
-        let network_id_len = data[0] as usize;
-        data = &data[1..];
-        // TODO: make sure network_id_len is less than NETWORK_ID_MAX_LENGTH
+        let network_id_len: usize = (*network_id_len_byte).into();
+        if network_id_len > NETWORK_ID_MAX_LENGTH {
+            return Err(AppSW::TxParsingFail);
+        }
 
-        let network_id = data[..network_id_len].to_vec();
-        data = &data[network_id_len..];
+        let (network_id, rest) = rest
+            .split_at_checked(network_id_len)
+            .ok_or(AppSW::TxParsingFail)?;
 
-        Ok(data)
+        self.account_number = u32::from_be_bytes(*account_number_bytes);
+        self.remain_tx_len = u32::from_be_bytes(*tx_len_bytes);
+        self.network_id = network_id.to_vec();
+
+        Ok(rest)
     }
 
     fn parse_tx_first_chunk(&mut self, data: &[u8]) -> Result<(), AppSW> {
@@ -109,6 +119,7 @@ pub fn handler_sign_tx(
     let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
 
     if first_chunk {
+        ctx.reset();
         let tx_bytes = ctx.parse_header_data(data)?;
         ctx.parse_tx_first_chunk(tx_bytes)?;
         ctx.blake2b.update(tx_bytes);
