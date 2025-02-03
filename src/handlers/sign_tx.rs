@@ -132,9 +132,7 @@ pub fn handler_sign_tx(
         let mut hash: [u8; 32] = [0; 32];
         ctx.blake2b.finalize(&mut hash);
         let data_to_sign = [&ctx.network_id[..], &hash].concat();
-        let privkey = utils::get_private_key(ctx.account_number);
-        let (sig, sig_len) = privkey.sign(&data_to_sign).map_err(|_| AppSW::TxSignFail)?;
-        // assert that sig_len is 64
+        let sig = utils::sign(ctx.account_number, &data_to_sign).ok_or(AppSW::TxSignFail)?;
         comm.append(&sig);
         Ok(())
     } else {

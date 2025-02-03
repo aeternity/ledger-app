@@ -20,13 +20,18 @@ impl ToString for AePrefix {
     }
 }
 
-const ALLOWED_PATH_LEN: usize = 5;
-const BIP32_PATH: [u32; ALLOWED_PATH_LEN] = make_bip32_path(b"m/44'/457'/0'/0'/0'");
 
 pub fn get_private_key(account_number: u32) -> ECPrivateKey<32, 'E'> {
+    const ALLOWED_PATH_LEN: usize = 5;
+    const BIP32_PATH: [u32; ALLOWED_PATH_LEN] = make_bip32_path(b"m/44'/457'/0'/0'/0'");
+
     let mut path = BIP32_PATH.clone();
     path[2] |= account_number;
     Ed25519::derive_from_path_slip10(&path)
+}
+
+pub fn sign(account_number: u32, data: &[u8]) -> Option<[u8; 64]> {
+    get_private_key(account_number).sign(data).map(|(sig, _)| sig).ok()
 }
 
 pub fn to_ae_string(pubkey: &[u8], prefix: AePrefix) -> String {

@@ -29,8 +29,9 @@ mod app_ui {
 }
 mod handlers {
     pub mod get_address;
-    pub mod sign_tx;
     pub mod get_version;
+    pub mod sign_msg;
+    pub mod sign_tx;
 }
 
 mod settings;
@@ -38,8 +39,9 @@ mod settings;
 use app_ui::menu::ui_menu_main;
 use handlers::{
     get_address::handler_get_address,
-    sign_tx::{handler_sign_tx, TxContext},
     get_version::handler_get_version,
+    sign_msg::handler_sign_message,
+    sign_tx::{handler_sign_tx, TxContext},
 };
 use ledger_device_sdk::io::{ApduHeader, Comm, Reply, StatusWords};
 #[cfg(feature = "pending_review_screen")]
@@ -82,6 +84,8 @@ pub enum AppSW {
     TxSignFail = 0xB008,
     KeyDeriveFail = 0xB009,
     VersionParsingFail = 0xB00A,
+    MsgWrongLength = 0xB100,
+    MsgSignFail = 0xB101,
     WrongApduLength = StatusWords::BadLen as u16,
     Ok = 0x9000,
 }
@@ -97,6 +101,7 @@ pub enum Instruction {
     GetVersion,
     GetAddress { confirm_needed: bool },
     SignTx { first_chunk: bool },
+    SignMsg,
 }
 
 impl TryFrom<ApduHeader> for Instruction {
@@ -122,6 +127,7 @@ impl TryFrom<ApduHeader> for Instruction {
                 first_chunk: value.p1 == 0
             }),
             (6, 0, 0) => Ok(Instruction::GetVersion),
+            (8, 0, 0) => Ok(Instruction::SignMsg),
             (2 | 4 | 6, _, _) => Err(AppSW::WrongP1P2),
             (_, _, _) => Err(AppSW::InsNotSupported),
         }
@@ -198,5 +204,6 @@ fn handle_apdu(comm: &mut Comm, ins: &Instruction, ctx: &mut TxContext) -> Resul
         Instruction::SignTx { first_chunk } => handler_sign_tx(comm, *first_chunk, ctx),
         Instruction::GetAddress { confirm_needed } => handler_get_address(comm, *confirm_needed),
         Instruction::GetVersion => handler_get_version(comm),
+        Instruction::SignMsg => handler_sign_message(comm),
     }
 }
