@@ -89,9 +89,9 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
         // with constant generic parameters of NbglReview. Default values are 32 and 1024 respectively.
         let review: NbglReview = NbglReview::new()
             .titles(
-                "Review transaction\nto send CRAB",
+                "Review transaction\nto send AE",
                 "",
-                "Sign transaction\nto send CRAB",
+                "Sign transaction\nto send AE",
             )
             .glyph(&FERRIS);
 

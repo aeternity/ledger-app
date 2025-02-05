@@ -64,7 +64,7 @@ pub fn ui_display_address(addr: &[u8]) -> Result<bool, AppSW> {
         // Display the address confirmation screen.
         Ok(NbglAddressReview::new()
             .glyph(&FERRIS)
-            .verify_str("Verify CRAB address")
+            .verify_str("Verify AE address")
             .show(&addr_str))
     }
 }
