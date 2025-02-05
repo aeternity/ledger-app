@@ -3,6 +3,9 @@ use alloc::{borrow::ToOwned, string::String, vec::Vec};
 use ledger_device_sdk::hash::{blake2::Blake2b_256, HashInit};
 use ledger_device_sdk::io::Comm;
 
+#[cfg(any(target_os = "stax", target_os = "flex"))]
+use ledger_device_sdk::nbgl::NbglHomeAndSettings;
+
 use aerlp::{FromRlpItem, RlpItem};
 use num_bigint::{BigInt, BigUint};
 use num_rational::BigRational;
@@ -34,6 +37,9 @@ pub struct TxContext {
 
     /// Hash of all transaction's chunks
     blake2b: Blake2b_256,
+
+    #[cfg(any(target_os = "stax", target_os = "flex"))]
+    pub home: NbglHomeAndSettings,
 }
 
 impl TxContext {
