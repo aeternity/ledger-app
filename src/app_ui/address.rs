@@ -58,11 +58,9 @@ pub fn ui_display_address(addr: &[u8]) -> Result<bool, AppSW> {
         Ok(my_review.show())
     }
 
-    // TODO: check that things are working for stax and flex
     #[cfg(any(target_os = "stax", target_os = "flex"))]
     {
-        // Load glyph from 64x64 4bpp gif file with include_gif macro. Creates an NBGL compatible glyph.
-        const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("crab_64x64.gif", NBGL));
+        const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
         // Display the address confirmation screen.
         Ok(NbglAddressReview::new()
             .glyph(&FERRIS)
