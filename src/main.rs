@@ -25,7 +25,7 @@ mod utils;
 mod app_ui {
     pub mod address;
     pub mod menu;
-    pub mod sign;
+    pub mod sign_tx;
 }
 mod handlers {
     pub mod get_address;
