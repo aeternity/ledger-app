@@ -8,7 +8,7 @@ use num_bigint::{BigInt, BigUint};
 use num_rational::BigRational;
 
 use crate::app_ui::sign_tx::ui_display_tx;
-use crate::utils::{self, to_ae_string, AePrefix};
+use crate::utils::{self, AePrefix};
 use crate::AppSW;
 
 const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
@@ -154,5 +154,5 @@ fn parse_address(address: &[u8]) -> Result<String, AppSW> {
 
     let address_bytes: [u8; 32] = rest.try_into().map_err(|_| AppSW::TxParsingFail)?;
 
-    Ok(to_ae_string(&address_bytes, prefix))
+    Ok(utils::to_ae_string(&address_bytes, prefix))
 }

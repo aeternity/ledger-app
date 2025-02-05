@@ -25,6 +25,7 @@ mod utils;
 mod app_ui {
     pub mod address;
     pub mod menu;
+    pub mod sign_msg;
     pub mod sign_tx;
 }
 mod handlers {
@@ -85,7 +86,8 @@ pub enum AppSW {
     KeyDeriveFail = 0xB009,
     VersionParsingFail = 0xB00A,
     MsgWrongLength = 0xB100,
-    MsgSignFail = 0xB101,
+    MsgHashFail = 0xB101,
+    MsgSignFail = 0xB102,
     WrongApduLength = StatusWords::BadLen as u16,
     Ok = 0x9000,
 }
