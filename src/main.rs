@@ -140,6 +140,9 @@ impl TryFrom<ApduHeader> for Instruction {
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, status: &AppSW) {
     let (show_status, status_type) = match (ins, status) {
+        (Instruction::GetAddress { confirm_needed: true }, AppSW::Deny | AppSW::Ok) => {
+            (true, StatusType::Address)
+        }
         (_, _) => (false, StatusType::Transaction),
     };
 
