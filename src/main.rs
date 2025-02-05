@@ -88,6 +88,7 @@ pub enum AppSW {
     MsgWrongLength = 0xB100,
     MsgHashFail = 0xB101,
     MsgSignFail = 0xB102,
+    GetAddressParsingFail = 0xB200,
     WrongApduLength = StatusWords::BadLen as u16,
     Ok = 0x9000,
 }
