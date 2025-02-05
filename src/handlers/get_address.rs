@@ -16,13 +16,24 @@ pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), 
         .public_key()
         .map_err(|_| AppSW::KeyDeriveFail)?;
 
-    // the following is number 4 from the "Key Generation" section of RFC8032
-    // the ledger library implements the first 3 steps and then return the
-    // public key in an uncompressed format (0x04 byte followed by 32 bytes for x
-    // and 32 bytes for y)
+    // From RFC 8032 ("Key Generation" section):
+    // Link: https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.5
+    //
+    // 4.  The public key A is the encoding of the point [s]B.  First,
+    //     encode the y-coordinate (in the range 0 <= y < p) as a little-
+    //     endian string of 32 octets.  The most significant bit of the
+    //     final octet is always zero.  To form the encoding of the point
+    //     [s]B, copy the least significant bit of the x coordinate to the
+    //     most significant bit of the final octet.  The result is the
+    //     public key.
+    //
+    // The ledger library implements the first 3 steps and then return the
+    // public key in an uncompressed format (0x04 byte followed by 32 bytes
+    // for x and 32 bytes for y).
     let mut pk1 = pk.pubkey[33..].to_vec();
-    // TODO: check that reversing here is needed and why?
+    // Reverse to make it little-endian
     pk1.reverse();
+    // Copy the least significant bit
     if (pk.pubkey[32] & 1) != 0 {
         pk1[31] |= 0x80;
     }
