@@ -1,7 +1,3 @@
-use alloc::borrow::ToOwned;
-use alloc::string::ToString;
-use ledger_device_sdk::ecc::{make_bip32_path, Ed25519};
-use ledger_device_sdk::hash::{sha2::Sha2_256, HashInit};
 use ledger_device_sdk::io::Comm;
 
 use crate::app_ui::address::ui_display_address;
