@@ -7,7 +7,7 @@ use aerlp::{FromRlpItem, RlpItem};
 use num_bigint::{BigInt, BigUint};
 use num_rational::BigRational;
 
-use crate::app_ui::sign::ui_display_tx;
+use crate::app_ui::sign_tx::ui_display_tx;
 use crate::utils::{self, to_ae_string, AePrefix};
 use crate::AppSW;
 
