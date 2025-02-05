@@ -1,14 +1,14 @@
 use ledger_device_sdk::io::Comm;
 
 use crate::app_ui::address::ui_display_address;
-use crate::utils::{AePrefix, get_private_key, to_ae_string};
+use crate::utils::{self, AePrefix};
 use crate::AppSW;
 
 pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), AppSW> {
     let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
 
     let account_number = u32::from_be_bytes(data.try_into().map_err(|_| AppSW::WrongApduLength)?);
-    let pk = get_private_key(account_number)
+    let pk = utils::get_private_key(account_number)
         .public_key()
         .map_err(|_| AppSW::KeyDeriveFail)?;
 
@@ -34,7 +34,7 @@ pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), 
         pk1[31] |= 0x80;
     }
 
-    let ae_address = to_ae_string(&pk1, AePrefix::AccountPubkey);
+    let ae_address = utils::to_ae_string(&pk1, AePrefix::AccountPubkey);
 
     if !confirm_needed || ui_display_address(ae_address.as_bytes())? {
         let address_len: u8 = ae_address
