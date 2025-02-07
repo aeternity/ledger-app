@@ -138,6 +138,9 @@ fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, sta
         (Instruction::GetAddress { confirm_needed: true }, AppSW::Deny | AppSW::Ok) => {
             (true, StatusType::Address)
         }
+        (Instruction::SignMsg, AppSW::Deny | AppSW::Ok) => {
+            (true, StatusType::Message)
+        }
         (_, _) => (false, StatusType::Transaction),
     };
 
