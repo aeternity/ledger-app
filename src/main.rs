@@ -18,9 +18,6 @@
 #![no_std]
 #![no_main]
 
-// TODO: enable warnings later. this is done to make it easier to find error messages
-#![allow(warnings)]
-
 mod utils;
 mod app_ui {
     pub mod address;
@@ -60,14 +57,12 @@ extern crate alloc;
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 use ledger_device_sdk::nbgl::{init_comm, NbglReviewStatus, StatusType};
 
-// P2 for last APDU to receive.
-const P2_SIGN_TX_LAST: u8 = 0x00;
-// P2 for more APDU to receive.
-const P2_SIGN_TX_MORE: u8 = 0x80;
-// P1 for first APDU number.
+// P1 for GetAddress
+const P1_CONFIRM_NOT_NEEDED: u8 = 0x00;
+const P1_CONFIRM_NEEDED: u8 = 0x01;
+// P1 for SignTx
 const P1_SIGN_TX_START: u8 = 0x00;
-// P1 for maximum APDU number.
-const P1_SIGN_TX_MAX: u8 = 0x03;
+const P1_SIGN_TX_MORE: u8 = 0x80;
 
 // Application status words.
 #[repr(u16)]
@@ -123,11 +118,11 @@ impl TryFrom<ApduHeader> for Instruction {
     /// [`sample_main`] to have this verification automatically performed by the SDK.
     fn try_from(value: ApduHeader) -> Result<Self, Self::Error> {
         match (value.ins, value.p1, value.p2) {
-            (2, 0 | 1, 0) => Ok(Instruction::GetAddress {
-                confirm_needed: value.p1 != 0,
+            (2, P1_CONFIRM_NOT_NEEDED | P1_CONFIRM_NEEDED, 0) => Ok(Instruction::GetAddress {
+                confirm_needed: value.p1 == P1_CONFIRM_NEEDED,
             }),
-            (4, 0 | 0x80, 0) => Ok(Instruction::SignTx {
-                first_chunk: value.p1 == 0
+            (4, P1_SIGN_TX_START | P1_SIGN_TX_MORE, 0) => Ok(Instruction::SignTx {
+                first_chunk: value.p1 == P1_SIGN_TX_START
             }),
             (6, 0, 0) => Ok(Instruction::GetVersion),
             (8, 0, 0) => Ok(Instruction::SignMsg),
