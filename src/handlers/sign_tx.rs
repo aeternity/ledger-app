@@ -77,7 +77,7 @@ impl TxContext {
     }
 
     fn parse_tx_first_chunk(&mut self, data: &[u8]) -> Result<(), AppSW> {
-        let (rlp_item, remain) =
+        let (rlp_item, _remain) =
             RlpItem::try_deserialize(data).map_err(|_| AppSW::TxParsingFail)?;
         // TODO: the rlp item has a length, assert that it's ok
         // TODO: is it fine if something remains? or should I check if reamin.empty() == true
@@ -128,15 +128,15 @@ pub fn handler_sign_tx(
         ctx.reset();
         let tx_bytes = ctx.parse_header_data(data)?;
         ctx.parse_tx_first_chunk(tx_bytes)?;
-        ctx.blake2b.update(tx_bytes);
+        ctx.blake2b.update(tx_bytes).map_err(|_| AppSW::TxHashFail)?;
     } else {
-        ctx.blake2b.update(data);
+        ctx.blake2b.update(data).map_err(|_| AppSW::TxHashFail)?;
         return Ok(());
     }
 
     if ui_display_tx(&ctx.tx)? {
         let mut hash: [u8; 32] = [0; 32];
-        ctx.blake2b.finalize(&mut hash);
+        ctx.blake2b.finalize(&mut hash).map_err(|_| AppSW::TxHashFail)?;
         let data_to_sign = [&ctx.network_id[..], &hash].concat();
         let sig = utils::sign(ctx.account_number, &data_to_sign).ok_or(AppSW::TxSignFail)?;
         comm.append(&sig);

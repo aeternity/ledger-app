@@ -16,7 +16,6 @@
  *****************************************************************************/
 
 use crate::AppSW;
-use alloc::format;
 
 #[cfg(not(any(target_os = "stax", target_os = "flex")))]
 use ledger_device_sdk::ui::{
