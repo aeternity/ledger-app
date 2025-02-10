@@ -6,9 +6,9 @@ use ledger_device_sdk::io::Comm;
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 use ledger_device_sdk::nbgl::NbglHomeAndSettings;
 
+use primitive_types::U256;
+
 use aerlp::{FromRlpItem, RlpItem};
-use num_bigint::{BigInt, BigUint};
-use num_rational::BigRational;
 
 use crate::app_ui::sign_tx::ui_display_tx;
 use crate::utils::{self, AePrefix};
@@ -20,8 +20,8 @@ const NETWORK_ID_MAX_LENGTH: usize = 32;
 #[derive(Default)]
 pub struct TxFirstChunk {
     pub recipient: String,
-    pub amount: BigRational,
-    pub fee: BigRational,
+    pub amount: U256,
+    pub fee: U256,
     pub payload: String,
 }
 
@@ -94,11 +94,8 @@ impl TxContext {
         }
         let _ = parse_address(&list[2].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
         let recipient = parse_address(&list[3].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
-        let amountx =
-            BigUint::from_bytes_be(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
-        let amount = BigRational::new(BigInt::from(amountx), BigInt::from(10u64.pow(18)));
-        let feex = BigUint::from_bytes_be(&list[5].byte_array().map_err(|_| AppSW::TxParsingFail)?);
-        let fee = BigRational::new(BigInt::from(feex), BigInt::from(10u64.pow(18)));
+        let amount = U256::from_big_endian(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
+        let fee = U256::from_big_endian(&list[5].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let payload =
             core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::TxParsingFail)?)
                 .unwrap()

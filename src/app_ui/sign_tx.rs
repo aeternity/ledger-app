@@ -14,6 +14,14 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  *****************************************************************************/
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
+use core::iter;
+
+use primitive_types::U256;
+
 use crate::handlers::sign_tx::TxFirstChunk;
 use crate::AppSW;
 
@@ -40,10 +48,8 @@ use alloc::format;
 ///
 /// * `tx` - Transaction to be displayed for validation
 pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
-    use num_traits::cast::ToPrimitive;
-
-    let amount_str = format!("{}", tx.amount.to_f64().unwrap());
-    let fee_str = format!("{}", tx.fee.to_f64().unwrap());
+    let amount_str = format!("{}", display_amount(tx.amount));
+    let fee_str = format!("{}", display_amount(tx.fee));
     let to_str = format!("{}", tx.recipient);
 
     // Define transaction review fields
@@ -97,4 +103,50 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
 
         Ok(review.show(&my_fields))
     }
+}
+
+/// Convert an amount in Aettos to an amount in AE.
+/// 
+/// Since there's no need to deal with floating-point numbers, the conversion
+/// is done by converting the amount to String and moving the decimal point 18
+/// places to left.
+fn display_amount(amount: U256) -> String {
+    const DECIMAL_PLACES: usize = 18;
+
+    // Pad the amount in Aettos with 18 leading zeros
+    let padded = [
+        iter::repeat("0").take(DECIMAL_PLACES).collect(),
+        amount.to_string(),
+    ]
+    .concat();
+
+    // Move the decimal point 18 places to the left (divide by 10^18)
+    let (left, right) = padded.split_at(padded.len() - DECIMAL_PLACES);
+
+    // Remove leading zeros from the decimal part
+    let dec = left.chars().skip_while(|c| *c == '0').collect::<String>();
+    // Remove trailing zeros from the fractional part
+    let frac = right
+        .chars()
+        .rev()
+        .skip_while(|c| *c == '0')
+        .collect::<Vec<_>>()
+        .into_iter()
+        .rev()
+        .collect::<String>();
+
+    let mut output = String::new();
+
+    if dec.is_empty() {
+        output.push('0');
+    } else {
+        output.push_str(&dec);
+    }
+
+    if !frac.is_empty() {
+        output.push('.');
+        output.push_str(&frac);
+    }
+
+    output
 }

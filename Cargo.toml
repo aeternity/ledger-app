@@ -12,10 +12,8 @@ serde-json-core = { git = "https://github.com/rust-embedded-community/serde-json
 hex = { version = "0.4.3", default-features = false, features = ["serde", "alloc"] }
 numtoa = "0.2.4"
 bs58 = { version = "0.5", default-features = false, features = ["alloc"] }
+primitive-types = { version = "0.13.1", default-features = false }
 aerlp = { git = "https://github.com/ghallak/aerlp" }
-num-bigint = { version = "0.4.6", default-features = false }
-num-rational = { version = "0.4.2", default-features = false, features = ["num-bigint"] }
-num-traits = { version = "0.2.19", default-features = false }
 
 [profile.release]
 opt-level = 'z'
