@@ -136,6 +136,9 @@ fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, sta
         (Instruction::SignMsg, AppSW::Deny | AppSW::Ok) => {
             (true, StatusType::Message)
         }
+        (Instruction::SignTx { .. }, AppSW::Deny | AppSW::Ok) if tx_ctx.is_finished() => {
+            (true, StatusType::Transaction)
+        }
         (_, _) => (false, StatusType::Transaction),
     };
 

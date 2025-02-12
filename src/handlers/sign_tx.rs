@@ -47,6 +47,11 @@ impl TxContext {
         Default::default()
     }
 
+    // TODO: Fix later when long rlp items are supported
+    pub fn is_finished(&self) -> bool {
+        true
+    }
+
     pub fn reset(&mut self) {
         self.account_number = 0;
         self.remain_tx_len = 0;
