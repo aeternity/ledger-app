@@ -51,7 +51,7 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
     let to_str = format!("{}", tx.recipient);
 
     // Define transaction review fields
-    let my_fields = [
+    let mut my_fields = Vec::from([
         Field {
             name: "Amount",
             value: amount_str.as_str(),
@@ -64,11 +64,16 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
             name: "Destination",
             value: to_str.as_str(),
         },
-        Field {
-            name: "Payload",
-            value: tx.payload.as_str(),
-        },
-    ];
+    ]);
+
+    if !tx.payload.is_empty() {
+        my_fields.push(
+            Field {
+                name: "Payload",
+                value: tx.payload.as_str(),
+            }
+        );
+    }
 
     // Create transaction review
     #[cfg(not(any(target_os = "stax", target_os = "flex")))]
