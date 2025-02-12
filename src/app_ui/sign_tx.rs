@@ -32,8 +32,6 @@ use ledger_device_sdk::ui::{
 };
 
 #[cfg(any(target_os = "stax", target_os = "flex"))]
-use crate::settings::Settings;
-#[cfg(any(target_os = "stax", target_os = "flex"))]
 use include_gif::include_gif;
 #[cfg(any(target_os = "stax", target_os = "flex"))]
 use ledger_device_sdk::nbgl::{Field, NbglGlyph, NbglReview};
