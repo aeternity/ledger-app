@@ -7,7 +7,8 @@ use crate::AppSW;
 pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), AppSW> {
     let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
 
-    let account_number = u32::from_be_bytes(data.try_into().map_err(|_| AppSW::GetAddressParsingFail)?);
+    let account_number =
+        u32::from_be_bytes(data.try_into().map_err(|_| AppSW::GetAddressParsingFail)?);
     let pk = utils::get_private_key(account_number)
         .public_key()
         .map_err(|_| AppSW::KeyDeriveFail)?;
@@ -44,7 +45,7 @@ pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), 
 
         comm.append(&[address_len]);
         comm.append(ae_address.as_bytes());
-        
+
         Ok(())
     } else {
         Err(AppSW::Deny)
