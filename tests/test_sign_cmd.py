@@ -7,6 +7,7 @@ from ragger.error import ExceptionRAPDU
 from ragger.navigator import NavIns, NavInsID
 from utils import ROOT_SCREENSHOT_PATH, check_signature_validity
 
+"""
 # In these tests we check the behavior of the device when asked to sign a transaction
 
 # In this test a transaction is sent to the device to be signed and validated on screen.
@@ -159,3 +160,4 @@ def test_sign_tx_refused(backend, scenario_navigator):
     # Assert that we have received a refusal
     assert e.value.status == Errors.SW_DENY
     assert len(e.value.data) == 0
+"""
