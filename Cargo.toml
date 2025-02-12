@@ -19,10 +19,6 @@ aerlp = { git = "https://github.com/ghallak/aerlp" }
 opt-level = 'z'
 lto = true
 
-[features]
-default = ["pending_review_screen"]
-pending_review_screen = []
-
 [package.metadata.ledger]
 curve = ["secp256k1"]
 flags = "0"

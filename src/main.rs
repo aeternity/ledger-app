@@ -42,9 +42,6 @@ use handlers::{
     sign_tx::{handler_sign_tx, TxContext},
 };
 use ledger_device_sdk::io::{ApduHeader, Comm, Reply, StatusWords};
-#[cfg(feature = "pending_review_screen")]
-#[cfg(not(any(target_os = "stax", target_os = "flex")))]
-use ledger_device_sdk::ui::gadgets::display_pending_review;
 
 #[cfg(not(any(target_os = "stax", target_os = "flex")))]
 use ledger_device_sdk::io::Event;
@@ -172,10 +169,6 @@ extern "C" fn sample_main() {
         tx_ctx.home = ui_menu_main(&mut comm);
         tx_ctx.home.show_and_return();
     }
-
-    #[cfg(not(any(target_os = "stax", target_os = "flex")))]
-    #[cfg(feature = "pending_review_screen")]
-    display_pending_review(&mut comm);
 
     loop {
         #[cfg(any(target_os = "stax", target_os = "flex"))]
