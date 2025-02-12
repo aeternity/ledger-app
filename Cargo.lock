@@ -23,8 +23,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "app-boilerplate-rust"
-version = "1.6.3"
+name = "app-aeternity"
+version = "1.0.0"
 dependencies = [
  "aerlp",
  "bs58",
