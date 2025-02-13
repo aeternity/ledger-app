@@ -46,18 +46,13 @@ pub fn to_ae_string(pubkey: &[u8], prefix: AePrefix) -> String {
 }
 
 fn make_check(input: &[u8]) -> [u8; 4] {
-    let mut sha2 = Sha2_256::new();
+    let digest = sha256(&sha256(input));
+    *digest.first_chunk::<4>().expect("SHA-256 digest must be 32 bytes")
+}
 
-    let mut hash1: [u8; 32] = [0u8; 32];
-    let mut hash2: [u8; 32] = [0u8; 32];
-
-    sha2.update(input).unwrap();
-    sha2.finalize(&mut hash1).unwrap();
-
-    sha2.update(&hash1).unwrap();
-    sha2.finalize(&mut hash2).unwrap();
-
-    let mut check: [u8; 4] = [0u8; 4];
-    check.copy_from_slice(&hash2[0..4]);
-    check
+fn sha256(input: &[u8]) -> [u8; 32] {
+    let mut hasher = Sha2_256::new();
+    let mut output: [u8; 32] = [0; 32];
+    let _ = hasher.hash(input, &mut output);
+    output
 }
