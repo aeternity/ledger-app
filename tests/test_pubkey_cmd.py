@@ -2,7 +2,7 @@ import pytest
 
 from application_client.command_sender import CommandSender, Errors
 from application_client.response_unpacker import unpack_get_address_response
-from application_client.boilerplate_utils import create_ae_curve_path
+from application_client.utils import create_ae_curve_path
 from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
 from ragger.error import ExceptionRAPDU
 from ragger.navigator import NavInsID, NavIns
