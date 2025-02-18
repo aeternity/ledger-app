@@ -25,15 +25,7 @@ use primitive_types::U256;
 use crate::handlers::sign_tx::TxFirstChunk;
 use crate::AppSW;
 
-#[cfg(not(any(target_os = "stax", target_os = "flex")))]
-use ledger_device_sdk::ui::{
-    bitmaps::{CROSSMARK, EYE, VALIDATE_14},
-    gadgets::{Field, MultiFieldReview},
-};
-
-#[cfg(any(target_os = "stax", target_os = "flex"))]
 use include_gif::include_gif;
-#[cfg(any(target_os = "stax", target_os = "flex"))]
 use ledger_device_sdk::nbgl::{Field, NbglGlyph, NbglReview};
 
 use alloc::format;
@@ -76,36 +68,23 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
     }
 
     // Create transaction review
-    #[cfg(not(any(target_os = "stax", target_os = "flex")))]
-    {
-        let my_review = MultiFieldReview::new(
-            &my_fields,
-            &["Review ", "Transaction"],
-            Some(&EYE),
-            "Approve",
-            Some(&VALIDATE_14),
-            "Reject",
-            Some(&CROSSMARK),
-        );
 
-        Ok(my_review.show())
-    }
-
+    // Load glyph from 64x64 4bpp gif file with include_gif macro. Creates an NBGL compatible glyph.
     #[cfg(any(target_os = "stax", target_os = "flex"))]
-    {
-        const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
-        // Create NBGL review. Maximum number of fields and string buffer length can be customised
-        // with constant generic parameters of NbglReview. Default values are 32 and 1024 respectively.
-        let review: NbglReview = NbglReview::new()
-            .titles(
-                "Review transaction\nto send AE",
-                "",
-                "Sign transaction\nto send AE",
-            )
-            .glyph(&FERRIS);
+    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
+    #[cfg(any(target_os = "nanosplus", target_os = "nanox"))]
+    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_14.gif", NBGL));
+    // Create NBGL review. Maximum number of fields and string buffer length can be customised
+    // with constant generic parameters of NbglReview. Default values are 32 and 1024 respectively.
+    let review: NbglReview = NbglReview::new()
+        .titles(
+            "Review transaction\nto send AE",
+            "",
+            "Sign transaction\nto send AE",
+        )
+        .glyph(&FERRIS);
 
-        Ok(review.show(&my_fields))
-    }
+    Ok(review.show(&my_fields))
 }
 
 /// Convert an amount in Aettos to an amount in AE.

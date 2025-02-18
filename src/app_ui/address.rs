@@ -17,48 +17,21 @@
 
 use crate::AppSW;
 
-#[cfg(not(any(target_os = "stax", target_os = "flex")))]
-use ledger_device_sdk::ui::{
-    bitmaps::{CROSSMARK, EYE, VALIDATE_14},
-    gadgets::{Field, MultiFieldReview},
-};
-
-#[cfg(any(target_os = "stax", target_os = "flex"))]
-use ledger_device_sdk::nbgl::{NbglAddressReview, NbglGlyph};
-
-#[cfg(any(target_os = "stax", target_os = "flex"))]
 use include_gif::include_gif;
+use ledger_device_sdk::nbgl::{NbglAddressReview, NbglGlyph};
 
 pub fn ui_display_address(addr: &[u8]) -> Result<bool, AppSW> {
     let addr_str = core::str::from_utf8(addr).unwrap();
 
-    #[cfg(not(any(target_os = "stax", target_os = "flex")))]
-    {
-        let address_field = [Field {
-            name: "Address",
-            value: addr_str,
-        }];
-
-        let my_review = MultiFieldReview::new(
-            &address_field,
-            &["Confirm Address"],
-            Some(&EYE),
-            "Approve",
-            Some(&VALIDATE_14),
-            "Reject",
-            Some(&CROSSMARK),
-        );
-
-        Ok(my_review.show())
-    }
-
+    // Load glyph from 64x64 4bpp gif file with include_gif macro. Creates an NBGL compatible glyph.
     #[cfg(any(target_os = "stax", target_os = "flex"))]
-    {
-        const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
-        // Display the address confirmation screen.
-        Ok(NbglAddressReview::new()
-            .glyph(&FERRIS)
-            .verify_str("Verify AE address")
-            .show(&addr_str))
-    }
+    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
+    #[cfg(any(target_os = "nanosplus", target_os = "nanox"))]
+    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_14.gif", NBGL));
+
+    // Display the address confirmation screen.
+    Ok(NbglAddressReview::new()
+        .glyph(&FERRIS)
+        .verify_str("Verify AE address")
+        .show(&addr_str))
 }
