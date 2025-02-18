@@ -2,8 +2,6 @@ use alloc::{borrow::ToOwned, string::String, vec::Vec};
 
 use ledger_device_sdk::hash::{blake2::Blake2b_256, HashInit};
 use ledger_device_sdk::io::Comm;
-
-#[cfg(any(target_os = "stax", target_os = "flex"))]
 use ledger_device_sdk::nbgl::NbglHomeAndSettings;
 
 use primitive_types::U256;
