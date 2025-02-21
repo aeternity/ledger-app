@@ -1,7 +1,8 @@
 use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
-use ledger_device_sdk::ecc::{ECPrivateKey, Ed25519, make_bip32_path};
-use ledger_device_sdk::hash::{HashInit, sha2::Sha2_256};
+use ledger_device_sdk::ecc::{make_bip32_path, ECPrivateKey, Ed25519};
+use ledger_device_sdk::hash::{sha2::Sha2_256, HashInit};
 
 pub enum AePrefix {
     AccountPubkey,
@@ -20,6 +21,24 @@ impl ToString for AePrefix {
     }
 }
 
+pub fn varuint_encode(n: usize) -> Vec<u8> {
+    let mut output = Vec::new();
+
+    if n <= 0xFC {
+        output.push(n as u8);
+    } else if n <= 0xFFFF {
+        output.push(0xFD);
+        output.extend((n as u16).to_le_bytes());
+    } else if n <= 0xFFFFFFFF {
+        output.push(0xFE);
+        output.extend((n as u32).to_le_bytes());
+    } else {
+        output.push(0xFF);
+        output.extend((n as u64).to_le_bytes());
+    }
+
+    output
+}
 
 pub fn get_private_key(account_number: u32) -> ECPrivateKey<32, 'E'> {
     const ALLOWED_PATH_LEN: usize = 5;
@@ -31,7 +50,10 @@ pub fn get_private_key(account_number: u32) -> ECPrivateKey<32, 'E'> {
 }
 
 pub fn sign(account_number: u32, data: &[u8]) -> Option<[u8; 64]> {
-    get_private_key(account_number).sign(data).map(|(sig, _)| sig).ok()
+    get_private_key(account_number)
+        .sign(data)
+        .map(|(sig, _)| sig)
+        .ok()
 }
 
 pub fn to_ae_string(pubkey: &[u8], prefix: AePrefix) -> String {
@@ -47,7 +69,9 @@ pub fn to_ae_string(pubkey: &[u8], prefix: AePrefix) -> String {
 
 fn make_check(input: &[u8]) -> [u8; 4] {
     let digest = sha256(&sha256(input));
-    *digest.first_chunk::<4>().expect("SHA-256 digest must be 32 bytes")
+    *digest
+        .first_chunk::<4>()
+        .expect("SHA-256 digest must be 32 bytes")
 }
 
 fn sha256(input: &[u8]) -> [u8; 32] {
