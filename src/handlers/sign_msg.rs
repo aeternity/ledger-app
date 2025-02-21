@@ -42,12 +42,7 @@ fn sign_message(account_number: u32, message: &[u8]) -> Result<[u8; 64], AppSW> 
 
     data_to_sign.push(SIGN_MAGIC_LEN);
     data_to_sign.extend(SIGN_MAGIC.bytes());
-    data_to_sign.push(
-        message
-            .len()
-            .try_into()
-            .expect("The size of message to be signed must fit in a u8"),
-    );
+    data_to_sign.extend(utils::varuint_encode(message.len()));
     data_to_sign.extend(message);
 
     let hash: [u8; 32] = {
