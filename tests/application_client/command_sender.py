@@ -67,25 +67,17 @@ class CommandSender:
                                      data=account_number)
 
 
-    def get_address_with_confirmation(self, account_number: bytes) -> RAPDU:
-        return self.backend.exchange(cla=CLA,
-                                     ins=InsType.GET_ADDRESS,
-                                     p1=P1.P1_CONFIRM_NEEDED,
-                                     p2=P2,
-                                     data=account_number)
-
-
-    """
     @contextmanager
-    def get_public_key_with_confirmation(self, path: str) -> Generator[None, None, None]:
+    def get_address_with_confirmation(self, account_number: bytes) -> Generator[None, None, None]:
         with self.backend.exchange_async(cla=CLA,
-                                         ins=InsType.GET_PUBLIC_KEY,
-                                         p1=P1.P1_CONFIRM,
-                                         p2=P2.P2_LAST,
-                                         data=pack_derivation_path(path)) as response:
+                                         ins=InsType.GET_ADDRESS,
+                                         p1=P1.P1_CONFIRM_NEEDED,
+                                         p2=P2,
+                                         data=account_number) as response:
             yield response
 
 
+    """
     @contextmanager
     def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
         self.backend.exchange(cla=CLA,
@@ -110,7 +102,7 @@ class CommandSender:
                                          p2=P2.P2_LAST,
                                          data=messages[-1]) as response:
             yield response
+    """
 
     def get_async_response(self) -> Optional[RAPDU]:
         return self.backend.last_async_response
-    """
