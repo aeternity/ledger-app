@@ -48,6 +48,7 @@ impl TxContext {
     }
 
     // TODO: Fix later when long rlp items are supported
+    #[cfg(any(target_os = "stax", target_os = "flex"))]
     pub fn is_finished(&self) -> bool {
         true
     }
