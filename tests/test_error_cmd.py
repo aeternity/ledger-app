@@ -14,7 +14,7 @@ def test_bad_cla(backend):
 # Ensure the app returns an error when a bad INS is used
 def test_bad_ins(backend):
     with pytest.raises(ExceptionRAPDU) as e:
-        backend.exchange(cla=CLA, ins=0xff)
+        backend.exchange(cla=CLA, ins=0xFF)
     assert e.value.status == Errors.SW_INS_NOT_SUPPORTED
 
 
@@ -26,6 +26,7 @@ def test_wrong_p1p2(backend):
     with pytest.raises(ExceptionRAPDU) as e:
         backend.exchange(cla=CLA, ins=InsType.GET_VERSION, p1=P1.P1_START, p2=P2 + 1)
     assert e.value.status == Errors.SW_WRONG_P1P2
+
 
 # Ensure the app returns an error when a bad data length is used
 def test_wrong_data_length(backend):
