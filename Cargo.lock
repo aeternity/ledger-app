@@ -28,6 +28,8 @@ version = "1.0.0"
 dependencies = [
  "aerlp",
  "bs58",
+ "critical-section",
+ "embedded-alloc",
  "hex",
  "include_gif",
  "ledger_device_sdk",

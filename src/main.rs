@@ -18,6 +18,47 @@
 #![no_std]
 #![no_main]
 
+#[cfg(target_os = "nanos")]
+use core::mem::MaybeUninit;
+
+#[cfg(target_os = "nanos")]
+use critical_section::RawRestoreState;
+#[cfg(target_os = "nanos")]
+use embedded_alloc::Heap;
+
+#[cfg(target_os = "nanos")]
+#[global_allocator]
+static HEAP: Heap = Heap::empty();
+
+#[cfg(target_os = "nanos")]
+struct CriticalSection;
+#[cfg(target_os = "nanos")]
+critical_section::set_impl!(CriticalSection);
+
+/// Default empty implementation as we don't have concurrency.
+#[cfg(target_os = "nanos")]
+unsafe impl critical_section::Impl for CriticalSection {
+    unsafe fn acquire() -> RawRestoreState {}
+    unsafe fn release(_restore_state: RawRestoreState) {}
+}
+
+#[cfg(target_os = "nanos")]
+const NANOS_HEAP_SIZE: usize = 1536;
+
+/// Initializes the heap memory for the global allocator.
+///
+/// The heap is stored in the stack, and has a fixed size.
+/// This method is called just before [sample_main].
+#[cfg(target_os = "nanos")]
+fn heap_init_nanos() {
+    static mut HEAP_MEM: [MaybeUninit<u8>; NANOS_HEAP_SIZE] = [MaybeUninit::uninit(); NANOS_HEAP_SIZE];
+    unsafe { HEAP.init(&raw mut HEAP_MEM as usize, NANOS_HEAP_SIZE) }
+}
+
+#[cfg(not(target_os = "nanos"))]
+fn heap_init_nanos() {
+}
+
 mod utils;
 mod app_ui {
     pub mod address;
@@ -155,6 +196,7 @@ fn show_status_and_home_if_needed(ins: &Instruction, tx_ctx: &mut TxContext, sta
 
 #[no_mangle]
 extern "C" fn sample_main() {
+    heap_init_nanos();
     // Create the communication manager, and configure it to accept only APDU from the 0xe0 class.
     // If any APDU with a wrong class value is received, comm will respond automatically with
     // BadCla status word.

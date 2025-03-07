@@ -14,6 +14,8 @@ numtoa = "0.2.4"
 bs58 = { version = "0.5", default-features = false, features = ["alloc"] }
 primitive-types = { version = "0.13.1", default-features = false }
 aerlp = { git = "https://github.com/ghallak/aerlp" }
+embedded-alloc = "0.5.1"
+critical-section = "1.1.2"
 
 [profile.release]
 opt-level = 'z'
@@ -24,6 +26,9 @@ curve = ["ed25519"]
 flags = "0"
 path = ["44'/457'"]
 name = "aeternity"
+
+[package.metadata.ledger.nanos]
+icon = "icons/ae.gif"
 
 [package.metadata.ledger.nanox]
 icon = "icons/ae_14.gif"
