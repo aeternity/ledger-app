@@ -1,3 +1,0 @@
-ledgerblue
-rlp==0.6.0
-base58
