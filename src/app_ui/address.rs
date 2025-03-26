@@ -15,11 +15,6 @@
  *  limitations under the License.
  *****************************************************************************/
 
-use ledger_device_sdk::ui::{
-    bitmaps::{CROSSMARK, EYE, VALIDATE_14},
-    gadgets::{Field, MultiFieldReview},
-};
-
 use crate::AppSW;
 
 use include_gif::include_gif;
