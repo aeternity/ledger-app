@@ -82,7 +82,7 @@ impl TxContext {
         let (rlp_item, _remain) =
             RlpItem::try_deserialize(data).map_err(|_| AppSW::TxParsingFail)?;
         // TODO: the rlp item has a length, assert that it's ok
-        // TODO: is it fine if something remains? or should I check if reamin.empty() == true
+        // TODO: is it fine if something remains? or should I check if remain.empty() == true
 
         let list = rlp_item.list().map_err(|_| AppSW::TxParsingFail)?;
 
