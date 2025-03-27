@@ -6,22 +6,16 @@ use crate::AppSW;
 pub fn ui_display_msg(message_bytes: &[u8]) -> Result<bool, AppSW> {
     let message = core::str::from_utf8(message_bytes).unwrap();
 
-    let my_fields = [
-        Field {
-            name: "Message",
-            value: message,
-        },
-    ];
+    let my_fields = [Field {
+        name: "Message",
+        value: message,
+    }];
 
     const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
     // Create NBGL review. Maximum number of fields and string buffer length can be customised
     // with constant generic parameters of NbglReview. Default values are 32 and 1024 respectively.
     let review: NbglReview = NbglReview::new()
-        .titles(
-            "Review message",
-            "",
-            "Sign message",
-        )
+        .titles("Review message", "", "Sign message")
         .glyph(&FERRIS);
 
     Ok(review.show(&my_fields))

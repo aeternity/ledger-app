@@ -28,11 +28,9 @@ pub fn ui_menu_main(_: &mut Comm) -> NbglHomeAndSettings {
     const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_14.gif", NBGL));
 
     // Display the home screen.
-    NbglHomeAndSettings::new()
-        .glyph(&FERRIS)
-        .infos(
-            "Aeternity",
-            env!("CARGO_PKG_VERSION"),
-            env!("CARGO_PKG_AUTHORS"),
-        )
+    NbglHomeAndSettings::new().glyph(&FERRIS).infos(
+        "Aeternity",
+        env!("CARGO_PKG_VERSION"),
+        env!("CARGO_PKG_AUTHORS"),
+    )
 }

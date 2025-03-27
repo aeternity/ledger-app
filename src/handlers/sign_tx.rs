@@ -58,7 +58,8 @@ impl TxContext {
     }
 
     fn parse_header_data<'a>(&mut self, data: &'a [u8]) -> Result<&'a [u8], AppSW> {
-        let (account_number_bytes, rest) = data.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
+        let (account_number_bytes, rest) =
+            data.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
         let (tx_len_bytes, rest) = rest.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
         let (network_id_len_byte, rest) = rest.split_first().ok_or(AppSW::TxParsingFail)?;
 
@@ -96,7 +97,8 @@ impl TxContext {
         }
         let _ = parse_address(&list[2].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
         let recipient = parse_address(&list[3].byte_array().map_err(|_| AppSW::TxParsingFail)?)?;
-        let amount = U256::from_big_endian(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
+        let amount =
+            U256::from_big_endian(&list[4].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let fee = U256::from_big_endian(&list[5].byte_array().map_err(|_| AppSW::TxParsingFail)?);
         let payload =
             core::str::from_utf8(&list[8].byte_array().map_err(|_| AppSW::TxParsingFail)?)
@@ -127,7 +129,9 @@ pub fn handler_sign_tx(
         ctx.reset();
         let tx_bytes = ctx.parse_header_data(data)?;
         ctx.parse_tx_first_chunk(tx_bytes)?;
-        ctx.blake2b.update(tx_bytes).map_err(|_| AppSW::TxHashFail)?;
+        ctx.blake2b
+            .update(tx_bytes)
+            .map_err(|_| AppSW::TxHashFail)?;
     } else {
         ctx.blake2b.update(data).map_err(|_| AppSW::TxHashFail)?;
         return Ok(());
@@ -135,7 +139,9 @@ pub fn handler_sign_tx(
 
     if ui_display_tx(&ctx.tx)? {
         let mut hash: [u8; 32] = [0; 32];
-        ctx.blake2b.finalize(&mut hash).map_err(|_| AppSW::TxHashFail)?;
+        ctx.blake2b
+            .finalize(&mut hash)
+            .map_err(|_| AppSW::TxHashFail)?;
         let data_to_sign = [&ctx.network_id[..], &hash].concat();
         let sig = utils::sign(ctx.account_number, &data_to_sign).ok_or(AppSW::TxSignFail)?;
         comm.append(&sig);

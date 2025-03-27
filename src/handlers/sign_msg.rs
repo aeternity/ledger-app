@@ -14,14 +14,12 @@ const SIGN_MAGIC_LEN: u8 = SIGN_MAGIC.len() as u8;
 pub fn handler_sign_message(comm: &mut Comm) -> Result<(), AppSW> {
     let data = comm.get_data().map_err(|_| AppSW::WrongApduLength)?;
 
-    let (account_number_bytes, rest) = data
-        .split_first_chunk::<4>()
-        .ok_or(AppSW::MsgWrongLength)?;
+    let (account_number_bytes, rest) =
+        data.split_first_chunk::<4>().ok_or(AppSW::MsgWrongLength)?;
     let account_number = u32::from_be_bytes(*account_number_bytes);
 
-    let (message_length_bytes, message) = rest
-        .split_first_chunk::<4>()
-        .ok_or(AppSW::MsgWrongLength)?;
+    let (message_length_bytes, message) =
+        rest.split_first_chunk::<4>().ok_or(AppSW::MsgWrongLength)?;
     let message_length = usize::from_be_bytes(*message_length_bytes);
 
     if message_length != message.len() {
@@ -46,10 +44,14 @@ fn sign_message(account_number: u32, message: &[u8]) -> Result<[u8; 64], AppSW> 
     data_to_sign.extend(message);
 
     let hash: [u8; 32] = {
-        let mut blake2b =  Blake2b_256::new();
+        let mut blake2b = Blake2b_256::new();
         let mut output = [0; 32];
-        blake2b.update(&data_to_sign).map_err(|_| AppSW::MsgHashFail)?;
-        blake2b.finalize(&mut output).map_err(|_| AppSW::MsgHashFail)?;
+        blake2b
+            .update(&data_to_sign)
+            .map_err(|_| AppSW::MsgHashFail)?;
+        blake2b
+            .finalize(&mut output)
+            .map_err(|_| AppSW::MsgHashFail)?;
         output
     };
 

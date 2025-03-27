@@ -1,4 +1,4 @@
-use alloc::{borrow::ToOwned, vec::Vec, string::String};
+use alloc::{borrow::ToOwned, string::String, vec::Vec};
 
 use include_gif::include_gif;
 use ledger_device_sdk::nbgl::{Field, NbglGlyph, NbglReview};
