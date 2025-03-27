@@ -59,12 +59,10 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
     ]);
 
     if !tx.payload.is_empty() {
-        my_fields.push(
-            Field {
-                name: "Payload",
-                value: tx.payload.as_str(),
-            }
-        );
+        my_fields.push(Field {
+            name: "Payload",
+            value: tx.payload.as_str(),
+        });
     }
 
     // Create transaction review
@@ -88,7 +86,7 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
 }
 
 /// Convert an amount in Aettos to an amount in AE.
-/// 
+///
 /// Since there's no need to deal with floating-point numbers, the conversion
 /// is done by converting the amount to String and moving the decimal point 18
 /// places to left.
