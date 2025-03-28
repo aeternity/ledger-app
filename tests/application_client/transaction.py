@@ -1,6 +1,6 @@
 import json
 from dataclasses import dataclass
-from utils import UINT64_MAX
+from application_client.utils import UINT64_MAX
 
 
 class TransactionError(Exception):
