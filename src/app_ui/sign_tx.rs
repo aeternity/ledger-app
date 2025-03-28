@@ -18,7 +18,6 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use core::iter;
 
 use primitive_types::U256;
 
@@ -28,8 +27,6 @@ use crate::AppSW;
 use include_gif::include_gif;
 use ledger_device_sdk::nbgl::{Field, NbglGlyph, NbglReview};
 
-use alloc::format;
-
 /// Displays a transaction and returns true if user approved it.
 ///
 /// This method can return [`AppSW::TxDisplayFail`] error if the coin name length is too long.
@@ -38,9 +35,9 @@ use alloc::format;
 ///
 /// * `tx` - Transaction to be displayed for validation
 pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
-    let amount_str = format!("{}", display_amount(tx.amount));
-    let fee_str = format!("{}", display_amount(tx.fee));
-    let to_str = format!("{}", tx.recipient);
+    let amount_str = display_amount(tx.amount);
+    let fee_str = display_amount(tx.fee);
+    let to_str = tx.recipient.clone();
 
     // Define transaction review fields
     let mut my_fields = Vec::from([
@@ -95,7 +92,7 @@ fn display_amount(amount: U256) -> String {
 
     // Pad the amount in Aettos with 18 leading zeros
     let padded = [
-        iter::repeat("0").take(DECIMAL_PLACES).collect(),
+        "0".repeat(DECIMAL_PLACES),
         amount.to_string(),
     ]
     .concat();

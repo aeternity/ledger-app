@@ -33,5 +33,5 @@ pub fn ui_display_address(addr: &[u8]) -> Result<bool, AppSW> {
     Ok(NbglAddressReview::new()
         .glyph(&FERRIS)
         .verify_str("Verify AE address")
-        .show(&addr_str))
+        .show(addr_str))
 }

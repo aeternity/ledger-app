@@ -1,5 +1,6 @@
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::fmt;
 
 use ledger_device_sdk::ecc::{make_bip32_path, ECPrivateKey, Ed25519};
 use ledger_device_sdk::hash::{sha2::Sha2_256, HashInit};
@@ -9,15 +10,14 @@ pub enum AePrefix {
     NameId,
 }
 
-impl ToString for AePrefix {
-    fn to_string(&self) -> String {
+impl fmt::Display for AePrefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use AePrefix::*;
 
-        let s = match self {
-            AccountPubkey => "ak",
-            NameId => "nm",
-        };
-        s.to_string()
+        match self {
+            AccountPubkey => write!(f, "ak"),
+            NameId => write!(f, "nm"),
+        }
     }
 }
 
@@ -29,12 +29,9 @@ pub fn varuint_encode(n: usize) -> Vec<u8> {
     } else if n <= 0xFFFF {
         output.push(0xFD);
         output.extend((n as u16).to_le_bytes());
-    } else if n <= 0xFFFFFFFF {
+    } else {
         output.push(0xFE);
         output.extend((n as u32).to_le_bytes());
-    } else {
-        output.push(0xFF);
-        output.extend((n as u64).to_le_bytes());
     }
 
     output
@@ -44,7 +41,7 @@ pub fn get_private_key(account_number: u32) -> ECPrivateKey<32, 'E'> {
     const ALLOWED_PATH_LEN: usize = 5;
     const BIP32_PATH: [u32; ALLOWED_PATH_LEN] = make_bip32_path(b"m/44'/457'/0'/0'/0'");
 
-    let mut path = BIP32_PATH.clone();
+    let mut path = BIP32_PATH;
     path[2] |= account_number;
     Ed25519::derive_from_path_slip10(&path)
 }

@@ -19,7 +19,7 @@ pub fn handler_sign_data(comm: &mut Comm) -> Result<(), AppSW> {
     }
 
     if ui_display_data(actual_data)? {
-        let sig = utils::sign(account_number, &actual_data).ok_or(AppSW::DataSignFail)?;
+        let sig = utils::sign(account_number, actual_data).ok_or(AppSW::DataSignFail)?;
         comm.append(&sig);
         Ok(())
     } else {
