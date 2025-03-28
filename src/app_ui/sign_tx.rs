@@ -91,11 +91,7 @@ fn display_amount(amount: U256) -> String {
     const DECIMAL_PLACES: usize = 18;
 
     // Pad the amount in Aettos with 18 leading zeros
-    let padded = [
-        "0".repeat(DECIMAL_PLACES),
-        amount.to_string(),
-    ]
-    .concat();
+    let padded = ["0".repeat(DECIMAL_PLACES), amount.to_string()].concat();
 
     // Move the decimal point 18 places to the left (divide by 10^18)
     let (left, right) = padded.split_at(padded.len() - DECIMAL_PLACES);
