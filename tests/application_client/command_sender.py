@@ -3,7 +3,7 @@ from typing import Generator, List, Optional
 from contextlib import contextmanager
 
 from ragger.backend.interface import BackendInterface, RAPDU
-from ragger.bip import pack_derivation_path
+#from ragger.bip import pack_derivation_path
 
 
 MAX_APDU_LEN: int = 255
@@ -82,32 +82,30 @@ class CommandSender:
         ) as response:
             yield response
 
-    """
-    @contextmanager
-    def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
-        self.backend.exchange(cla=CLA,
-                              ins=InsType.SIGN_TX,
-                              p1=P1.P1_START,
-                              p2=P2.P2_MORE,
-                              data=pack_derivation_path(path))
-        messages = split_message(transaction, MAX_APDU_LEN)
-        idx: int = P1.P1_START + 1
+    #@contextmanager
+    #def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
+    #    self.backend.exchange(cla=CLA,
+    #                          ins=InsType.SIGN_TX,
+    #                          p1=P1.P1_START,
+    #                          p2=P2.P2_MORE,
+    #                          data=pack_derivation_path(path))
+    #    messages = split_message(transaction, MAX_APDU_LEN)
+    #    idx: int = P1.P1_START + 1
 
-        for msg in messages[:-1]:
-            self.backend.exchange(cla=CLA,
-                                  ins=InsType.SIGN_TX,
-                                  p1=idx,
-                                  p2=P2.P2_MORE,
-                                  data=msg)
-            idx += 1
+    #    for msg in messages[:-1]:
+    #        self.backend.exchange(cla=CLA,
+    #                              ins=InsType.SIGN_TX,
+    #                              p1=idx,
+    #                              p2=P2.P2_MORE,
+    #                              data=msg)
+    #        idx += 1
 
-        with self.backend.exchange_async(cla=CLA,
-                                         ins=InsType.SIGN_TX,
-                                         p1=idx,
-                                         p2=P2.P2_LAST,
-                                         data=messages[-1]) as response:
-            yield response
-    """
+    #    with self.backend.exchange_async(cla=CLA,
+    #                                     ins=InsType.SIGN_TX,
+    #                                     p1=idx,
+    #                                     p2=P2.P2_LAST,
+    #                                     data=messages[-1]) as response:
+    #        yield response
 
     def get_async_response(self) -> Optional[RAPDU]:
         return self.backend.last_async_response
