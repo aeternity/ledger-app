@@ -8,7 +8,7 @@ UINT16_MAX: int = 2**16 - 1
 
 
 def create_ae_curve_path(account_number: int):
-    return "m/44'/457'/{}'/0'/0'".format(account_number)
+    return f"m/44'/457'/{account_number}'/0'/0'"
 
 
 def write_varint(n: int) -> bytes:
