@@ -71,7 +71,7 @@ pub fn ui_display_tx(tx: &TxFirstChunk) -> Result<bool, AppSW> {
     #[cfg(any(target_os = "stax", target_os = "flex"))]
     const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_64.gif", NBGL));
     #[cfg(any(target_os = "nanosplus", target_os = "nanox"))]
-    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae_14.gif", NBGL));
+    const FERRIS: NbglGlyph = NbglGlyph::from_include(include_gif!("icons/ae.gif", NBGL));
     // Create NBGL review. Maximum number of fields and string buffer length can be customised
     // with constant generic parameters of NbglReview. Default values are 32 and 1024 respectively.
     let review: NbglReview = NbglReview::new()
