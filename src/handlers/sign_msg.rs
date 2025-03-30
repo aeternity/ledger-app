@@ -6,7 +6,7 @@ use ledger_device_sdk::io::Comm;
 use crate::app_ui::sign_msg::ui_display_msg;
 use crate::{utils, AppSW};
 
-const SIGN_MAGIC: &str = "Aeternity Signed Message:\n";
+const SIGN_MAGIC: &str = "aeternity Signed Message:\n";
 // Conversion using `as` is safe to do here because the string is constant and
 // the length is known at compile time.
 const SIGN_MAGIC_LEN: u8 = SIGN_MAGIC.len() as u8;
