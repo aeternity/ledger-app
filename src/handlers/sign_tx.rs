@@ -12,7 +12,7 @@ use crate::app_ui::sign_tx::ui_display_tx;
 use crate::utils::{self, AePrefix};
 use crate::AppSW;
 
-const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
+const SPEND_TRANSACTION_TAG: u8 = 0x0c;
 const NETWORK_ID_MAX_LENGTH: usize = 32;
 
 #[derive(Default)]
@@ -87,9 +87,7 @@ impl TxContext {
 
         let list = rlp_item.list().map_err(|_| AppSW::TxParsingFail)?;
 
-        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)?
-            != SPEND_TRANSACTION_PREFIX
-        {
+        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)? != SPEND_TRANSACTION_TAG {
             // TODO: this should be changed later. non-spend txns should be signed
             //       but they should not be treated like spend txns
             // TODO: use a better status word for the error
