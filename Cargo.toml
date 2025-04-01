@@ -25,10 +25,10 @@ default = ["ledger_device_sdk/nano_nbgl"]
 debug = ["ledger_device_sdk/debug"]
 
 [package.metadata.ledger]
-curve = ["secp256k1"]
+curve = ["ed25519"]
 flags = "0"
-path = ["44'/1'"]
-name = "Rust Boilerplate"
+path = ["44'/457'"]
+name = "aeternity"
 
 [package.metadata.ledger.nanox]
 icon = "icons/ae_14x14.gif"
