@@ -9,10 +9,10 @@ use primitive_types::U256;
 use aerlp::{FromRlpItem, RlpItem};
 
 use crate::app_ui::sign_tx::ui_display_tx;
-use crate::utils::{self, AePrefix};
+use crate::utils::{self, AeEncoding};
 use crate::AppSW;
 
-const SPEND_TRANSACTION_PREFIX: u8 = 0x0c;
+const SPEND_TRANSACTION_TAG: u8 = 0x0c;
 const NETWORK_ID_MAX_LENGTH: usize = 32;
 
 #[derive(Default)]
@@ -87,9 +87,7 @@ impl TxContext {
 
         let list = rlp_item.list().map_err(|_| AppSW::TxParsingFail)?;
 
-        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)?
-            != SPEND_TRANSACTION_PREFIX
-        {
+        if u8::from_rlp_item(&list[0]).map_err(|_| AppSW::TxParsingFail)? != SPEND_TRANSACTION_TAG {
             // TODO: this should be changed later. non-spend txns should be signed
             //       but they should not be treated like spend txns
             // TODO: use a better status word for the error
@@ -152,14 +150,15 @@ pub fn handler_sign_tx(
 }
 
 fn parse_address(address: &[u8]) -> Result<String, AppSW> {
-    const ACCOUNT_ADDRESS_PREFIX: u8 = 1;
-    const ACCOUNT_NAMEID_PREFIX: u8 = 2;
-
     let (prefix_byte, rest) = address.split_first().ok_or(AppSW::TxParsingFail)?;
 
     let prefix = match *prefix_byte {
-        ACCOUNT_ADDRESS_PREFIX => AePrefix::AccountPubkey,
-        ACCOUNT_NAMEID_PREFIX => AePrefix::NameId,
+        1 => AeEncoding::AccountAddress,
+        2 => AeEncoding::Name,
+        3 => AeEncoding::Commitment,
+        4 => AeEncoding::OracleAddress,
+        5 => AeEncoding::ContractAddress,
+        6 => AeEncoding::Channel,
         _ => Err(AppSW::TxParsingFail)?,
     };
 

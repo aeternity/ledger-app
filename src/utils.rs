@@ -5,18 +5,26 @@ use core::fmt;
 use ledger_device_sdk::ecc::{make_bip32_path, ECPrivateKey, Ed25519};
 use ledger_device_sdk::hash::{sha2::Sha2_256, HashInit};
 
-pub enum AePrefix {
-    AccountPubkey,
-    NameId,
+pub enum AeEncoding {
+    AccountAddress,
+    Name,
+    Commitment,
+    OracleAddress,
+    ContractAddress,
+    Channel,
 }
 
-impl fmt::Display for AePrefix {
+impl fmt::Display for AeEncoding {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use AePrefix::*;
+        use AeEncoding::*;
 
         match self {
-            AccountPubkey => write!(f, "ak"),
-            NameId => write!(f, "nm"),
+            AccountAddress => write!(f, "ak"),
+            Name => write!(f, "nm"),
+            Commitment => write!(f, "cm"),
+            OracleAddress => write!(f, "ok"),
+            ContractAddress => write!(f, "ct"),
+            Channel => write!(f, "ch"),
         }
     }
 }
@@ -53,7 +61,7 @@ pub fn sign(account_number: u32, data: &[u8]) -> Option<[u8; 64]> {
         .ok()
 }
 
-pub fn to_ae_string(pubkey: &[u8], prefix: AePrefix) -> String {
+pub fn to_ae_string(pubkey: &[u8], prefix: AeEncoding) -> String {
     let pk = [pubkey, &make_check(pubkey)].concat();
 
     let mut output = prefix.to_string();

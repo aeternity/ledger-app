@@ -1,7 +1,7 @@
 use ledger_device_sdk::io::Comm;
 
 use crate::app_ui::address::ui_display_address;
-use crate::utils::{self, AePrefix};
+use crate::utils::{self, AeEncoding};
 use crate::AppSW;
 
 pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), AppSW> {
@@ -35,7 +35,7 @@ pub fn handler_get_address(comm: &mut Comm, confirm_needed: bool) -> Result<(), 
         pk1[31] |= 0x80;
     }
 
-    let ae_address = utils::to_ae_string(&pk1, AePrefix::AccountPubkey);
+    let ae_address = utils::to_ae_string(&pk1, AeEncoding::AccountAddress);
 
     if !confirm_needed || ui_display_address(ae_address.as_bytes())? {
         let address_len: u8 = ae_address
