@@ -12,6 +12,8 @@ use crate::app_ui::sign_tx::ui_display_tx;
 use crate::utils::{self, AeEncoding};
 use crate::AppSW;
 
+const NON_INNER_TX_TAG: u8 = 0x00;
+const INNER_TX_TAG: u8 = 0x01;
 const SPEND_TRANSACTION_TAG: u8 = 0x0c;
 const NETWORK_ID_MAX_LENGTH: usize = 32;
 
@@ -28,6 +30,7 @@ pub struct TxContext {
     /// Header data
     account_number: u32,
     remain_tx_len: u32,
+    inner_tx: bool,
     network_id: Vec<u8>,
 
     /// Transaction data in the first chunk
@@ -52,6 +55,7 @@ impl TxContext {
     pub fn reset(&mut self) {
         self.account_number = 0;
         self.remain_tx_len = 0;
+        self.inner_tx = false;
         self.network_id = Vec::new();
         self.tx = Default::default();
         self.blake2b.reset();
@@ -61,8 +65,15 @@ impl TxContext {
         let (account_number_bytes, rest) =
             data.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
         let (tx_len_bytes, rest) = rest.split_first_chunk::<4>().ok_or(AppSW::TxParsingFail)?;
-        let (network_id_len_byte, rest) = rest.split_first().ok_or(AppSW::TxParsingFail)?;
 
+        let (inner_tx_byte, rest) = rest.split_first().ok_or(AppSW::TxParsingFail)?;
+        if [INNER_TX_TAG, NON_INNER_TX_TAG].contains(inner_tx_byte) {
+            self.inner_tx = *inner_tx_byte == INNER_TX_TAG;
+        } else {
+            return Err(AppSW::TxParsingFail);
+        }
+
+        let (network_id_len_byte, rest) = rest.split_first().ok_or(AppSW::TxParsingFail)?;
         let network_id_len: usize = (*network_id_len_byte).into();
         if network_id_len > NETWORK_ID_MAX_LENGTH {
             return Err(AppSW::TxParsingFail);
@@ -140,7 +151,16 @@ pub fn handler_sign_tx(
         ctx.blake2b
             .finalize(&mut hash)
             .map_err(|_| AppSW::TxHashFail)?;
-        let data_to_sign = [&ctx.network_id[..], &hash].concat();
+        let data_to_sign = {
+            let mut data = Vec::new();
+            data.extend_from_slice(&ctx.network_id);
+            if ctx.inner_tx {
+                data.extend_from_slice("-".as_bytes());
+                data.extend_from_slice("inner_tx".as_bytes());
+            }
+            data.extend_from_slice(&hash);
+            data
+        };
         let sig = utils::sign(ctx.account_number, &data_to_sign).ok_or(AppSW::TxSignFail)?;
         comm.append(&sig);
         Ok(())
