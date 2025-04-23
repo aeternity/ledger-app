@@ -5,8 +5,6 @@ from application_client.response_unpacker import unpack_get_address_response
 from application_client.utils import UINT32_MAX, create_ae_curve_path
 from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
 from ragger.error import ExceptionRAPDU
-from ragger.navigator import NavInsID, NavIns
-from utils import ROOT_SCREENSHOT_PATH
 from base58 import b58encode_check
 from random import randint
 
