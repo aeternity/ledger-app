@@ -20,3 +20,16 @@ def check_signature_validity(
     return pk.verify(
         signature=signature, data=message, hashfunc=keccak_256, sigdecode=sigdecode_der
     )
+
+
+def varint_encode(n: int) -> bytes:
+    if n < 0:
+        raise ValueError("VarInt cannot encode negative numbers")
+    elif n <= 0xFC:
+        return bytes([n])
+    elif n <= 0xFFFF:
+        return b"\xfd" + n.to_bytes(2, "little")
+    elif n <= 0xFFFFFFFF:
+        return b"\xfe" + n.to_bytes(4, "little")
+    else:
+        return b"\xff" + n.to_bytes(8, "little")

@@ -22,6 +22,11 @@ def test_sign_data_short_non_utf(backend, scenario_navigator):
     run_sign_data(backend, scenario_navigator, data)
 
 
+def test_sign_data_short_non_ascii(backend, scenario_navigator):
+    data = "مرحبا".encode()
+    run_sign_data(backend, scenario_navigator, data)
+
+
 def test_sign_data_long_utf(backend, scenario_navigator):
     data = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.".encode()
     run_sign_data(backend, scenario_navigator, data)
@@ -41,11 +46,6 @@ def run_sign_data(backend, scenario_navigator, data_to_sign, approve=True):
     # Random value for account number since it's not important for this test
     account_number = 15
 
-    path = create_ae_curve_path(account_number)
-    public_key, _ = calculate_public_key_and_chaincode(
-        CurveChoice.Ed25519Slip, path=path
-    )
-
     client = CommandSender(backend)
     if approve:
         with client.sign_data(account_number=account_number, data=data_to_sign):
@@ -53,6 +53,10 @@ def run_sign_data(backend, scenario_navigator, data_to_sign, approve=True):
 
         response = client.get_async_response().data
         der_sig = unpack_sign_response(response)
+        path = create_ae_curve_path(account_number)
+        public_key, _ = calculate_public_key_and_chaincode(
+            CurveChoice.Ed25519Slip, path=path
+        )
 
         assert check_signature_validity(
             bytes.fromhex(public_key[2:]), der_sig, data_to_sign

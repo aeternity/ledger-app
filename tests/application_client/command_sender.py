@@ -84,6 +84,19 @@ class CommandSender:
             yield response
 
     @contextmanager
+    def sign_msg(
+        self, account_number: int, message: str
+    ) -> Generator[None, None, None]:
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_MSG,
+            data=account_number.to_bytes(4, "big")
+            + len(message.encode()).to_bytes(4, "big")
+            + message.encode(),
+        ) as response:
+            yield response
+
+    @contextmanager
     def sign_data(
         self, account_number: int, data: bytes
     ) -> Generator[None, None, None]:
