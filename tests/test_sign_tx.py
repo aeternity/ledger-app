@@ -114,7 +114,10 @@ def run_sign_tx(backend, scenario_navigator, tx, approve=True, inner_tx=False):
             data_to_sign = network_id + blake2b_256.digest()
 
         with client.sign_tx(
-            account_number=account_number, network_id=network_id, transaction=tx
+            account_number=account_number,
+            inner_tx=inner_tx,
+            network_id=network_id,
+            transaction=tx,
         ):
             scenario_navigator.review_approve()
 
@@ -126,7 +129,10 @@ def run_sign_tx(backend, scenario_navigator, tx, approve=True, inner_tx=False):
     else:
         with pytest.raises(ExceptionRAPDU) as e:
             with client.sign_tx(
-                account_number=account_number, network_id=network_id, transaction=tx
+                account_number=account_number,
+                inner_tx=inner_tx,
+                network_id=network_id,
+                transaction=tx,
             ):
                 scenario_navigator.review_reject()
 

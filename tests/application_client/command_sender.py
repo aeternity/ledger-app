@@ -113,7 +113,7 @@ class CommandSender:
 
     @contextmanager
     def sign_tx(
-        self, account_number: int, network_id: bytes, transaction: Transaction
+        self, account_number: int, inner_tx: bool, network_id: bytes, transaction: Transaction
     ) -> Generator[None, None, None]:
         tx_rlp = rlp.encode(Transaction.serialize(transaction))
         with self.backend.exchange_async(
@@ -121,6 +121,7 @@ class CommandSender:
             ins=InsType.SIGN_TX,
             data=account_number.to_bytes(4, "big")
             + len(tx_rlp).to_bytes(4, "big")
+            + inner_tx.to_bytes(1, "big")
             + len(network_id).to_bytes(1, "big")
             + network_id
             + tx_rlp,
