@@ -1,34 +1,16 @@
-import json
-from dataclasses import dataclass
-from application_client.utils import UINT64_MAX
+import rlp
+from rlp.sedes import big_endian_int, binary
 
 
-class TransactionError(Exception):
-    pass
-
-
-@dataclass
-class Transaction:
-    nonce: int
-    coin: str
-    value: str
-    to: str
-    memo: str
-
-    def serialize(self) -> bytes:
-        if not 0 <= self.nonce <= UINT64_MAX:
-            raise TransactionError(f"Bad nonce: '{self.nonce}'!")
-
-        if len(self.to) != 40:
-            raise TransactionError(f"Bad address: '{self.to}'!")
-
-        # Serialize the transaction data to a JSON-formatted string
-        return json.dumps(
-            {
-                "nonce": self.nonce,
-                "coin": self.coin,
-                "value": self.value,
-                "to": self.to,
-                "memo": self.memo,
-            }
-        ).encode("utf-8")
+class Transaction(rlp.Serializable):
+    fields = (
+        ("tag", big_endian_int),
+        ("vsn", big_endian_int),
+        ("sender", binary),
+        ("recipient", binary),
+        ("amount", big_endian_int),
+        ("fee", big_endian_int),
+        ("ttl", big_endian_int),
+        ("nonce", big_endian_int),
+        ("payload", binary),
+    )

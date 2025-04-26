@@ -1,163 +1,135 @@
 import pytest
-
-"""
-from application_client.boilerplate_transaction import Transaction
-from application_client.boilerplate_command_sender import BoilerplateCommandSender, Errors
-from application_client.boilerplate_response_unpacker import unpack_get_public_key_response, unpack_sign_tx_response
+import rlp
+from hashlib import blake2b
+from application_client.transaction import Transaction
+from application_client.command_sender import CommandSender, Errors
+from application_client.utils import create_ae_curve_path
+from application_client.response_unpacker import unpack_sign_response
+from ragger.bip import calculate_public_key_and_chaincode, CurveChoice
+from utils import check_signature_validity
 from ragger.error import ExceptionRAPDU
-from ragger.navigator import NavIns, NavInsID
-from utils import ROOT_SCREENSHOT_PATH, check_signature_validity
-
-# In these tests we check the behavior of the device when asked to sign a transaction
-
-# In this test a transaction is sent to the device to be signed and validated on screen.
-# The transaction is short and will be sent in one chunk.
-# We will ensure that the displayed information is correct by using screenshots comparison.
-def test_sign_tx_short_tx(backend, scenario_navigator, firmware, navigator):
-    # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
-    # The path used for this entire test
-    path: str = "m/44'/1'/0'/0/0"
-
-    # First we need to get the public key of the device in order to build the transaction
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
-
-    # Create the transaction that will be sent to the device for signing
-    transaction = Transaction(
-        nonce=1,
-        coin="CRAB",
-        value=777,
-        to="de0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-        memo="For u EthDev"
-    ).serialize()
-    
-    # Enable display of transaction memo (NBGL devices only)
-    if not firmware.device.startswith("nano"):
-        navigator.navigate([NavInsID.USE_CASE_HOME_SETTINGS,
-                            NavIns(NavInsID.TOUCH, (200, 113)),
-                            NavInsID.USE_CASE_SUB_SETTINGS_EXIT],
-                            screen_change_before_first_instruction=False,
-                            screen_change_after_last_instruction=False)
-
-    # Send the sign device instruction.
-    # As it requires on-screen validation, the function is asynchronous.
-    # It will yield the result when the navigation is done
-    with client.sign_tx(path=path, transaction=transaction):
-        # Validate the on-screen request by performing the navigation appropriate for this device
-        scenario_navigator.review_approve()
-
-    # The device as yielded the result, parse it and ensure that the signature is correct
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    assert check_signature_validity(public_key, der_sig, transaction)
-    
-# In this test a transaction is sent to the device to be signed and validated on screen.
-# The transaction is short and will be sent in one chunk
-# We will ensure that the displayed information is correct by using screenshots comparison
-# The transaction memo should not be displayed as we have not enabled it in the app settings.
-def test_sign_tx_short_tx_no_memo(backend, scenario_navigator, firmware):
-    if firmware.device.startswith("nano"):
-        pytest.skip("Skipping this test for Nano devices")
-    
-    # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
-    # The path used for this entire test
-    path: str = "m/44'/1'/0'/0/0"
-
-    # First we need to get the public key of the device in order to build the transaction
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
-
-    # Create the transaction that will be sent to the device for signing
-    transaction = Transaction(
-        nonce=1,
-        coin="CRAB",
-        value=777,
-        to="de0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-        memo="For u EthDev"
-    ).serialize()
-
-    # Send the sign device instruction.
-    # As it requires on-screen validation, the function is asynchronous.
-    # It will yield the result when the navigation is done
-    with client.sign_tx(path=path, transaction=transaction):
-        # Validate the on-screen request by performing the navigation appropriate for this device
-        scenario_navigator.review_approve()
-
-    # The device as yielded the result, parse it and ensure that the signature is correct
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    
-    assert check_signature_validity(public_key, der_sig, transaction)
 
 
-# In this test a transaction is sent to the device to be signed and validated on screen.
-# This test is mostly the same as the previous one but with different values.
-# In particular the long memo will force the transaction to be sent in multiple chunks
-# def test_sign_tx_long_tx(firmware, backend, navigator, test_name):
-def test_sign_tx_long_tx(backend, scenario_navigator, firmware, navigator):
-    # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
-    path: str = "m/44'/1'/0'/0/0"
-
-    rapdu = client.get_public_key(path=path)
-    _, public_key, _, _ = unpack_get_public_key_response(rapdu.data)
-
-    transaction = Transaction(
-        nonce=1,
-        coin="CRAB",
-        value=666,
-        to="de0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-        memo=("This is a very long memo. "
-              "It will force the app client to send the serialized transaction to be sent in chunk. "
-              "As the maximum chunk size is 255 bytes we will make this memo greater than 255 characters. "
-              "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam.")
-    ).serialize()
-    
-    # Enable display of transaction memo (NBGL devices only)
-    if not firmware.device.startswith("nano"):
-        navigator.navigate([NavInsID.USE_CASE_HOME_SETTINGS,
-                            NavIns(NavInsID.TOUCH, (200, 113)),
-                            NavInsID.USE_CASE_SUB_SETTINGS_EXIT],
-                            screen_change_before_first_instruction=False,
-                            screen_change_after_last_instruction=False)
-
-    # Send the sign device instruction.
-    # As it requires on-screen validation, the function is asynchronous.
-    # It will yield the result when the navigation is done
-    with client.sign_tx(path=path, transaction=transaction):
-        # Validate the on-screen request by performing the navigation appropriate for this device
-        scenario_navigator.review_approve()
-
-    response = client.get_async_response().data
-    _, der_sig, _ = unpack_sign_tx_response(response)
-    assert check_signature_validity(public_key, der_sig, transaction)
+def test_sign_tx_short_tx(backend, scenario_navigator):
+    tx = Transaction(
+        tag=0x0C,
+        vsn=0x01,
+        sender=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        recipient=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        amount=0x1111D67BB1BB0000,
+        fee=0x0F4C36200800,
+        ttl=0x00,
+        nonce=0x0A,
+        payload=b"Lorem ipsum dolor sit amet",
+    )
+    run_sign_tx(backend, scenario_navigator, tx)
 
 
-# Transaction signature refused test
-# The test will ask for a transaction signature that will be refused on screen
+def test_sign_tx_short_tx_no_payload(backend, scenario_navigator):
+    tx = Transaction(
+        tag=0x0C,
+        vsn=0x01,
+        sender=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        recipient=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        amount=0x1111D67BB1BB0000,
+        fee=0x0F4C36200800,
+        ttl=0x00,
+        nonce=0x0A,
+        payload=b"",
+    )
+    run_sign_tx(backend, scenario_navigator, tx)
+
+
+def test_sign_tx_short_tx_inner(backend, scenario_navigator):
+    tx = Transaction(
+        tag=0x0C,
+        vsn=0x01,
+        sender=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        recipient=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        amount=0x1111D67BB1BB0000,
+        fee=0x0F4C36200800,
+        ttl=0x00,
+        nonce=0x0A,
+        payload=b"Lorem ipsum dolor sit amet",
+    )
+    run_sign_tx(backend, scenario_navigator, tx, inner_tx=True)
+
+
+def test_sign_tx_long_tx(backend, scenario_navigator):
+    tx = Transaction(
+        tag=0x0C,
+        vsn=0x01,
+        sender=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        recipient=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        amount=0x1111D67BB1BB0000,
+        fee=0x0F4C36200800,
+        ttl=0x00,
+        nonce=0x0A,
+        payload=(
+            b"Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent non"
+            b" elit non ipsum tristique volutpat. Etiam aliquam neque nunc, et"
+            b" iaculis mauris accumsan non. Suspendisse vestibulum ligula sed dui"
+            b" viverra suscipit. Ut in nisl tempus, finibus ex id, blandit velit. "
+            b"Cras vel congue ante."
+        ),
+    )
+    run_sign_tx(backend, scenario_navigator, tx)
+
+
 def test_sign_tx_refused(backend, scenario_navigator):
+    tx = Transaction(
+        tag=0x0C,
+        vsn=0x01,
+        sender=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        recipient=b'\x01\xf7^S\xf5x""zX\xb4c\t]m\xabe|\xab\x80Et\xbeb\xde\x0b\xe1\xf9Ry\xd0\x907',
+        amount=0x1111D67BB1BB0000,
+        fee=0x0F4C36200800,
+        ttl=0x00,
+        nonce=0x0A,
+        payload=b"Lorem ipsum dolor sit",
+    )
+    run_sign_tx(backend, scenario_navigator, tx, approve=False)
+
+
+def run_sign_tx(backend, scenario_navigator, tx, approve=True, inner_tx=False):
     # Use the app interface instead of raw interface
-    client = BoilerplateCommandSender(backend)
-    path: str = "m/44'/1'/0'/0/0"
+    client = CommandSender(backend)
+    # Random value for account number since it's not important for this test
+    account_number = 8
+    # Fixed network id since it's not important for this test
+    network_id = bytes.fromhex("61655f756174")
 
-    rapdu = client.get_public_key(path=path)
-    _, pub_key, _, _ = unpack_get_public_key_response(rapdu.data)
+    if approve:
+        path = create_ae_curve_path(account_number)
+        public_key, _ = calculate_public_key_and_chaincode(
+            CurveChoice.Ed25519Slip, path=path
+        )
 
-    transaction = Transaction(
-        nonce=1,
-        coin="CRAB",
-        value=666,
-        to="de0b295669a9fd93d5f28d9ec85e40f4cb697bae",
-        memo="This transaction will be refused by the user"
-    ).serialize()
+        rlp_tx = rlp.encode(Transaction.serialize(tx))
+        blake2b_256 = blake2b(digest_size=32)
+        blake2b_256.update(rlp_tx)
+        if inner_tx:
+            data_to_sign = network_id + b"-inner_tx" + blake2b_256.digest()
+        else:
+            data_to_sign = network_id + blake2b_256.digest()
 
-    with pytest.raises(ExceptionRAPDU) as e:
-        with client.sign_tx(path=path, transaction=transaction):
-            scenario_navigator.review_reject()
-    
-    # Assert that we have received a refusal
-    assert e.value.status == Errors.SW_DENY
-    assert len(e.value.data) == 0
-"""
+        with client.sign_tx(
+            account_number=account_number, network_id=network_id, transaction=tx
+        ):
+            scenario_navigator.review_approve()
+
+        response = client.get_async_response().data
+        der_sig = unpack_sign_response(response)
+        assert check_signature_validity(
+            bytes.fromhex(public_key[2:]), der_sig, data_to_sign
+        )
+    else:
+        with pytest.raises(ExceptionRAPDU) as e:
+            with client.sign_tx(
+                account_number=account_number, network_id=network_id, transaction=tx
+            ):
+                scenario_navigator.review_reject()
+
+        # Assert that we have received a refusal
+        assert e.value.status == Errors.SW_DENY
+        assert len(e.value.data) == 0

@@ -1,8 +1,10 @@
+import rlp
 from enum import IntEnum
 from typing import Generator, List, Optional
 from contextlib import contextmanager
 
 from ragger.backend.interface import BackendInterface, RAPDU
+from application_client.transaction import Transaction
 # from ragger.bip import pack_derivation_path
 
 
@@ -106,6 +108,22 @@ class CommandSender:
             data=account_number.to_bytes(4, "big")
             + len(data).to_bytes(4, "big")
             + data,
+        ) as response:
+            yield response
+
+    @contextmanager
+    def sign_tx(
+        self, account_number: int, network_id: bytes, transaction: Transaction
+    ) -> Generator[None, None, None]:
+        tx_rlp = rlp.encode(Transaction.serialize(transaction))
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_TX,
+            data=account_number.to_bytes(4, "big")
+            + len(tx_rlp).to_bytes(4, "big")
+            + len(network_id).to_bytes(1, "big")
+            + network_id
+            + tx_rlp,
         ) as response:
             yield response
 
