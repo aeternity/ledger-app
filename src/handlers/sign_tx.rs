@@ -155,8 +155,7 @@ pub fn handler_sign_tx(
             let mut data = Vec::new();
             data.extend_from_slice(&ctx.network_id);
             if ctx.inner_tx {
-                data.extend_from_slice("-".as_bytes());
-                data.extend_from_slice("inner_tx".as_bytes());
+                data.extend_from_slice("-inner_tx".as_bytes());
             }
             data.extend_from_slice(&hash);
             data
