@@ -2,9 +2,9 @@ from typing import Tuple
 from struct import unpack
 
 
-## remainder, data_len, data
-#def pop_sized_buf_from_buffer(buffer: bytes, size: int) -> Tuple[bytes, bytes]:
-#    return buffer[size:], buffer[0:size]
+# remainder, data_len, data
+def pop_sized_buf_from_buffer(buffer: bytes, size: int) -> Tuple[bytes, bytes]:
+    return buffer[size:], buffer[0:size]
 
 
 # remainder, data_len, data
@@ -33,11 +33,11 @@ def unpack_get_address_response(response: bytes) -> Tuple[int, bytes]:
     return address_len, address
 
 
-## Unpack from response:
-## response = sig (64)
-#def unpack_sign_response(response: bytes) -> Tuple[bytes]:
-#    response, sig = pop_sized_buf_from_buffer(response, 64)
-#
-#    assert len(response) == 0
-#
-#    return sig
+# Unpack from response:
+# response = sig (64)
+def unpack_sign_response(response: bytes) -> Tuple[bytes]:
+    response, sig = pop_sized_buf_from_buffer(response, 64)
+
+    assert len(response) == 0
+
+    return sig

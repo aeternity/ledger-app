@@ -8,7 +8,11 @@ pub fn ui_display_msg(message_bytes: &[u8]) -> Result<bool, AppSW> {
 
     let my_fields = [Field {
         name: "Message",
-        value: message,
+        value: if message.is_ascii() {
+            message
+        } else {
+            "Message contains non-ascii chars"
+        },
     }];
 
     #[cfg(any(target_os = "stax", target_os = "flex"))]

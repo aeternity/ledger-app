@@ -15,7 +15,10 @@ pub fn ui_display_data(data_bytes: &[u8]) -> Result<bool, AppSW> {
             name: "Data",
             value: string,
         }]),
-        None => Vec::new(),
+        None => Vec::from([Field {
+            name: "Data",
+            value: "Data is too long to be displayed",
+        }]),
     };
 
     #[cfg(any(target_os = "stax", target_os = "flex"))]

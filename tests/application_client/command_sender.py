@@ -1,9 +1,11 @@
+import rlp
 from enum import IntEnum
 from typing import Generator, List, Optional
 from contextlib import contextmanager
 
 from ragger.backend.interface import BackendInterface, RAPDU
-#from ragger.bip import pack_derivation_path
+from application_client.transaction import Transaction
+# from ragger.bip import pack_derivation_path
 
 
 MAX_APDU_LEN: int = 255
@@ -26,6 +28,7 @@ class InsType(IntEnum):
     SIGN_TX = 0x04
     GET_VERSION = 0x06
     SIGN_MSG = 0x08
+    SIGN_DATA = 0x0A
 
 
 class Errors(IntEnum):
@@ -82,8 +85,51 @@ class CommandSender:
         ) as response:
             yield response
 
-    #@contextmanager
-    #def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
+    @contextmanager
+    def sign_msg(
+        self, account_number: int, message: str
+    ) -> Generator[None, None, None]:
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_MSG,
+            data=account_number.to_bytes(4, "big")
+            + len(message.encode()).to_bytes(4, "big")
+            + message.encode(),
+        ) as response:
+            yield response
+
+    @contextmanager
+    def sign_data(
+        self, account_number: int, data: bytes
+    ) -> Generator[None, None, None]:
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_DATA,
+            data=account_number.to_bytes(4, "big")
+            + len(data).to_bytes(4, "big")
+            + data,
+        ) as response:
+            yield response
+
+    @contextmanager
+    def sign_tx(
+        self, account_number: int, inner_tx: bool, network_id: bytes, transaction: Transaction
+    ) -> Generator[None, None, None]:
+        tx_rlp = rlp.encode(Transaction.serialize(transaction))
+        with self.backend.exchange_async(
+            cla=CLA,
+            ins=InsType.SIGN_TX,
+            data=account_number.to_bytes(4, "big")
+            + len(tx_rlp).to_bytes(4, "big")
+            + inner_tx.to_bytes(1, "big")
+            + len(network_id).to_bytes(1, "big")
+            + network_id
+            + tx_rlp,
+        ) as response:
+            yield response
+
+    # @contextmanager
+    # def sign_tx(self, path: str, transaction: bytes) -> Generator[None, None, None]:
     #    self.backend.exchange(cla=CLA,
     #                          ins=InsType.SIGN_TX,
     #                          p1=P1.P1_START,
